@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="./css/style.css">
+    <link rel="stylesheet" type="text/css" href="./css/config.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&family=Roboto+Mono:ital,wght@0,300;1,300&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <title>Settings</title>
+</head>
+<body>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono&family=Poppins:wght@300&display=swap');
+    </style> 
+
+    <aside>
+        <p>General</p>
+        <p>Appearance</p>
+        <p>Account</p>
+        <p>Security</p>
+    </aside>
+
+    <article>
+        <section> <h2>General</h2>
+            <div>
+                <h3 id="configLang">Languaje</h3>
+                <div class="individualConfigs">
+                    <select name="transporte">
+                        <option value="1" selected>English</option>  
+                        <option value="2">Español</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <section> <h2>Appearance</h2>
+            <div>
+                <h3 id="configProfilePicture">Set profile picture</h3>
+                <div class="individualConfigs"></div>
+            </div>
+            <div>
+                <h3 id="configProfileColor">Profile color</h3>               
+                <div class="individualConfigs">
+                    This will aply to the color of your profile. Other people can see if enter to your profile.
+                    <p><input type="color"></p>
+                </div>
+            </div>
+        </section>
+
+        <section> <h2>Account</h2>
+            <div>
+                <h3 id="configName">Name</h3>
+                <div class="configNameConfigs">
+                    <div class="configNameLeft">
+                        <p>New name: <input type="text"></p>
+                        <p>New nickname: <input type="text"></p>  
+                    </div>
+                    <div class="configNameRight">
+                        <input type="radio" name="configName" value="FullNick" id="FullNick"> <label for="FullNick"> <div><span></span></div> Show full name and nick name </label>
+                        <input type="radio" name="configName" value="onlyFull" id="onlyFull"> <label for="onlyFull"> <div><span></span></div> Only show full name</label>
+                        <input type="radio" name="configName" value="onlyNick" id="onlyNick"> <label for="onlyNick"> <div><span></span></div> Only show nick name</label>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <section> <h2>Security</h2>
+            
+
+        </section>
+    </article>
+
+</body>
+</html>

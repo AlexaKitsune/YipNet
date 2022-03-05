@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="./css/style.css">
+    <link rel="stylesheet" type="text/css" href="./css/index.css">
+    <link rel="stylesheet" type="text/css" href="./css/index-register.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&family=Roboto+Mono:ital,wght@0,300;1,300&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <title>YipNet</title>
+</head>
+<body>
+
+    <section id="mainSection">
+
+        <div class="welcomeDiv">
+            <h1 class="welcome"> Welcome to YipNet </h1>
+            <h2 class="welcomeSub"> A new flexible social network. </h2>
+        </div>
+        
+        <form id="mainForm">
+                <div id="formStatus" style="display: none;">register</div>
+            <h2 id="whatFormMode">Create account</h2>
+            <input type="email" placeholder="E-mail *" class="textInput" id="email">
+            <input type="password" placeholder="Password *" class="textInput" id="pw">
+            <button  id="mainButtonRegister" class="button" type="button"> Register </button>
+            <button  id="mainButtonLogin" class="button" type="button"> Login </button>
+            
+            <div id="requiredMessage">All fields are required</div>
+            <div id="errorMessage">Invalid user or password</div>
+
+            <h3 id="isLogReg?">Already have an account?</h3>
+            <h3 id="LogReg">Login</h3>
+        </form>
+
+    </section>
+
+    <form id="registerForm">
+
+        <div class="registerNames">
+            <h3 class="registerTitles">Just one step more...</h3>
+            <p>Confirm password: <input type="password" placeholder="Password" class="textInput" id="confirm-pw" required></p>
+             <hr class="registerDivisor">
+            <p>Full name: <input type="text" id="fullname" placeholder="Enter your Full name" required></p>
+            <p>Nickname: <input type="text" id="nickname" placeholder="Enter your Nickname" required></p>  
+        </div>
+
+        <div class="registerOtherData">
+            <h3 class="registerTitles">Birth date</h3>
+            <input type="date" id="birthday" required>
+            <h3 class="registerTitles">Gender</h3>
+            <div class="genderRanges"><label for="maleRange"><div></div>Male: </label><input type="range" id="maleRange"></div>
+            <div class="genderRanges"><label for="femaleRange"><div></div>Female: </label><input type="range" id="femaleRange"></div>
+            <input type="checkbox" id="hide-gender"> <label for="hide-gender"> <div><span></span></div> Hide gender </label>
+        </div>
+
+        <div id="noMatchPwMessageForm">-- Passwords doesn't match! --</div>
+        <div id="requiredMessageForm">All fields are required</div>
+
+
+        <button id="mainContinueRegister" type="button">Continue</button>
+    </form>
+
+
+    <script src="./javascript/index.js"></script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+#registerForm{
+    width: 75vw;
+    border-radius: 5px;
+    height: 29vw;
+    position: absolute;
+    margin: auto;
+    left: 0px;
+    right: 0px;
+    top: 0px;
+    bottom: 0px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-around;
+    font-family: var(--fontContent);
+    box-shadow: var(--neuShadowOutBlack), var(--neuShadowOutWhite);
+    background-color: var(--blackground);
+    display: none;
+
+    animation-duration: 0.5s;
+    animation-fill-mode: forwards;
+}
+
+@keyframes emergeForm{
+    from {
+        transform: scale(0);
+    }
+      
+    to {
+        transform: scale(1);
+    }
+}
+
+.registerDivisor{
+    width: 100%;
+    border: 0px solid transparent;
+    border-top: 1px solid var(--blueColor)
+}
+
+.registerTitles{
+    align-self: flex-start;        
+}
+
+.registerNames, .registerOtherData{
+    margin-top: 1vw;
+    width: 30vw;
+}
+.registerNames{
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: flex-end;
+}
+.registerOtherData{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.genderRanges{
+    height: 3vw;
+    width: 60%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;    
+    margin-top: -1vw;
+    margin-bottom: 2vw;
+}
+
+#maleRange, #femaleRange{
+    margin-left: 1vw;
+}
+
+#mainContinueRegister{
+    position: absolute;
+    bottom: 1vw;
+    width: 66.5vw;
+}
+
+#errorMessageForm, #requiredMessageForm, #noMatchPwMessageForm{
+    font-family: var(--fontContent);
+    font-size: 1vw;
+    width: auto;
+    padding-left: 1vw;
+    padding-right: 1vw;
+    height: 1.5vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    position: absolute;
+    top:22.2vw;
+}
+#errorMessageForm{
+    background-color: red;
+}
+#requiredMessageForm, #noMatchPwMessageForm{
+    background-color: yellow;
+    color: black;
+}
+
+/* Responsive: */
+@media all and (max-width:780px){
+
+    #registerForm{
+        width: 92vw;
+        height: 164vw;
+        align-items: center;
+        flex-direction: column;
+        justify-content: space-evenly;
+        top: 2.5vw;
+        position: absolute;
+        margin: auto;
+        margin-top: 0vw;
+        margin-bottom: 30vw;
+    }
+    
+    .registerNames, .registerOtherData{
+        margin-top: -24vw;
+        width: 95%;
+    }
+    .registerNames{
+        align-items: center;
+    }
+    .registerNames p{
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 11vw;
+    }
+    .registerOtherData{
+        height: 70vw;
+        justify-content: space-around;
+    }
+    .registerOtherData label{
+        margin-right: 2vw;
+    }
+    
+    .genderRanges{  
+        height: 5vw;
+        width: 80%;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;    
+        margin-top: 2vw;
+        margin-bottom: 4vw;
+    }
+    
+    #maleRange, #femaleRange{
+        margin-left: 1vw;
+        width: 50vw;
+        height: auto;
+    }
+    
+    #mainContinueRegister{
+        position: absolute;
+        bottom: 4vw;
+        width: 66.5vw;
+    }
+
+    #errorMessageForm, #requiredMessageForm, #noMatchPwMessageForm{
+        font-size: 4vw;
+        height: 5vw;
+        padding-left: 2vw;
+        padding-right: 2vw;
+        top:144vw;
+    }
+
+}

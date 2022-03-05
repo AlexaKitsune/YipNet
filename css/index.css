@@ -1,0 +1,162 @@
+/* Usará paleta de colores azul y morado */
+#mainSection{
+    position: absolute;
+    margin: auto;
+    left: 0px;
+    right: 0px;
+    top: 0px;
+    bottom: 0px;
+    border: 3px solid var(--blackground);
+    box-shadow: var(--neuShadow);
+    width: 70vw;
+    height: 28vw;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    background-color: var(--blackground);
+}
+
+.welcomeDiv, #mainForm{
+    width: 45%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+
+.welcomeDiv{
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.welcome{
+    font-size: 5vw;
+    margin-top: 0.5vw;
+}
+.welcomeSub{
+    font-size: 1.5vw;
+    color: var(--blueColor);
+    margin-top: -2vw;
+}
+
+#mainForm{
+    justify-content: space-evenly;
+}
+
+#mainForm input{
+    width: 50%;
+}
+
+#whatFormMode{
+    margin-bottom: -1vw;
+    margin-top: -0.5vw;
+    font-size: 1.8vw;
+}
+
+#mainForm h3{
+    margin-bottom: -1vw;
+    margin-top: -1vw;
+    font-size: 1vw;
+}
+
+.textInput{
+    height: 2.5vw;
+    padding-left: 1vw;
+}
+
+.button{
+    width: 17vw;
+}
+
+#LogReg{
+    color: var(--blueColor);
+}
+#LogReg:hover{
+    cursor:pointer;
+    text-transform: uppercase;
+}
+
+#errorMessage, #requiredMessage{
+    font-family: var(--fontContent);
+    font-size: 1vw;
+    width: auto;
+    padding-left: 1vw;
+    padding-right: 1vw;
+    height: 1.5vw;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    position: absolute;
+    top:10vw;
+}
+#errorMessage{
+    background-color: red;
+}
+#requiredMessage{
+    background-color: yellow;
+    color: black;
+}
+
+/* Responsive: */
+@media all and (max-width:780px){
+
+    #mainSection{
+        position: relative;
+        margin: auto;
+        top: 0.5vw;
+        width: 92vw;
+        height: 134vw;
+        flex-direction: column;
+        justify-content: space-around;
+    }
+
+    .welcomeDiv, #mainForm{
+        width: 100%;
+        height: auto;
+        flex-direction: column;
+    }
+
+    .welcomeDiv{
+        width: 70%;
+    }
+
+    .welcome{
+        font-size: 10vw;
+        align-self: flex-start;
+    }
+    .welcomeSub{
+        font-size: 3.3vw;
+        margin-top: -4vw;
+        align-self: flex-start;
+    }
+    
+    #mainForm input{
+        width: 80%;
+        margin-top: 4vw;
+        margin-bottom: 4vw;
+    }
+    
+    #whatFormMode{
+        font-size: 6vw;
+    }
+    
+    #mainForm h3{
+        margin-top: 3vw;
+        font-size: 3.2vw;
+    }
+
+    .button{
+        width: 30vw;
+        margin-top: 1vw;
+        margin-bottom: 1vw;
+    }
+
+    #errorMessage, #requiredMessage{
+        font-size: 4vw;
+        height: 5vw;
+        padding-left: 2vw;
+        padding-right: 2vw;
+        top:86vw;
+    }
+
+}
