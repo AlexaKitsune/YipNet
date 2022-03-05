@@ -161,21 +161,22 @@ input[type=range]::-webkit-slider-thumb{
     background-color: var(--mainColor);
     border: 2px solid white;
     border-radius: 10vw;
-    box-shadow: var(--neuShadowOutBlack);
-    overflow: hidden;
+    box-shadow: var(--neuShadowOutBlack), var(--neuShadowOutBlack);
+        margin-top: -0.5vw;
+    /*overflow: hidden;*/
 }
 input[type=range]::-ms-thumb{
     background-color: var(--mainColor);
     border: 2px solid white;
     border-radius: 10vw;
-    box-shadow: var(--neuShadowOutBlack);
+    box-shadow: var(--neuShadowOutBlack), var(--neuShadowOutBlack);
     overflow: hidden;
 }
 input[type=range]::-moz-range-thumb{
     background-color: var(--mainColor);
     border: 2px solid white;
     border-radius: 10vw;
-    box-shadow: var(--neuShadowOutBlack);
+    box-shadow: var(--neuShadowOutBlack), var(--neuShadowOutBlack);
     overflow: hidden;
 }
 
@@ -183,7 +184,7 @@ input[type=range]::-webkit-slider-runnable-track{
     height: 3px;
     box-shadow: var(--neuPush), var(--neuPush), var(--neuPush), var(--neuPush);
     border-radius: 1vw;
-    overflow: hidden;
+    /*overflow: hidden;*/
 }
 input[type=range]::-ms-track{
     height: 3px;
@@ -193,7 +194,7 @@ input[type=range]::-ms-track{
 }
 input[type=range]::-moz-range-track{
     height: 3px;
-    box-shadow: var(--neuPush), var(--neuPush), var(--neuPush);
+    box-shadow: var(--neuPush), var(--neuPush), var(--neuPush), var(--neuPush);
     border-radius: 1vw;
     overflow: hidden;
 }
@@ -211,6 +212,19 @@ input[type="range"]::-ms-fill-lower {
 }
 input[type="range"]::-ms-fill-upper {  
     background-color: rgb(20,20,20);
+}
+
+/* Now for date: */
+input[type="date"]{
+    height: 1.5vw;
+    font-family: var(--fontTitle);
+    color: var(--mainColor);
+    border-radius: 5px;
+    border: 0px solid transparent;
+    box-shadow: var(--neuPull);
+}
+input[type="date"]:active{
+    box-shadow: var(--neuPush);
 }
 
 /* Responsive: */

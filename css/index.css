@@ -108,6 +108,7 @@
         height: 134vw;
         flex-direction: column;
         justify-content: space-around;
+        margin-top: 2vw;
     }
 
     .welcomeDiv, #mainForm{
