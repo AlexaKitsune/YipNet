@@ -15,8 +15,8 @@
     --fontContent: 'Roboto Mono', monospace;
     --neuPull: -0.4vw -0.4vw 0.8vw rgba(110, 110, 110, 0.6),
                 0.4vw 0.4vw 0.8vw rgba(0, 0, 0, 0.8);
-    --neuPush: -0.4vw -0.4vw 1vw rgba(0, 0, 0, 0.8),
-                0.4vw 0.4vw 1vw rgba(110, 110, 110, 0.6);
+    --neuPush: -0.4vw -0.4vw 1.2vw rgba(0, 0, 0, 0.8),
+                0.4vw 0.4vw 1.2vw rgba(110, 110, 110, 0.6);
 }
 
 
@@ -65,7 +65,7 @@ input[type=email], input[type=password], input[type=text]{
     font-size: 1em;
     height: 2.5vw;
     padding-left: 1vw;
-    box-shadow: var(--neuPush);
+    box-shadow: var(--neuPush), var(--neuPush);
 }
 
 input[type=color]{
@@ -123,7 +123,7 @@ input[type="checkbox"] + label div{
     width: 3.2vw;
     height: 1.4vw;
     border-radius: 10vw;
-    box-shadow: var(--neuPull);
+    box-shadow: var(--neuPull), var(--neuPull);
     margin-right: 1vw;
     display: flex;
     align-items: center;
@@ -141,7 +141,7 @@ input[type="checkbox"] + label div span{
 input[type="checkbox"]:hover + label div{ cursor: pointer; }
 input[type="checkbox"]:checked + label div{
     background-color: var(--mainColor);
-    box-shadow: var(--neuPush);
+    box-shadow: var(--neuPush), var(--neuPush);
     justify-content: center;
 }
 input[type="checkbox"]:checked + label div span{
@@ -182,19 +182,19 @@ input[type=range]::-moz-range-thumb{
 
 input[type=range]::-webkit-slider-runnable-track{
     height: 3px;
-    box-shadow: var(--neuPush), var(--neuPush), var(--neuPush), var(--neuPush);
+    box-shadow: var(--neuPush), var(--neuPush), var(--neuPush), var(--neuPush), var(--neuPush);
     border-radius: 1vw;
     /*overflow: hidden;*/
 }
 input[type=range]::-ms-track{
     height: 3px;
-    box-shadow: var(--neuPush), var(--neuPush), var(--neuPush), var(--neuPush);
+    box-shadow: var(--neuPush), var(--neuPush), var(--neuPush), var(--neuPush), var(--neuPush);
     border-radius: 1vw;
     overflow: hidden;
 }
 input[type=range]::-moz-range-track{
     height: 3px;
-    box-shadow: var(--neuPush), var(--neuPush), var(--neuPush), var(--neuPush);
+    box-shadow: var(--neuPush), var(--neuPush), var(--neuPush), var(--neuPush), var(--neuPush);
     border-radius: 1vw;
     overflow: hidden;
 }
@@ -221,11 +221,81 @@ input[type="date"]{
     color: var(--mainColor);
     border-radius: 5px;
     border: 0px solid transparent;
-    box-shadow: var(--neuPull);
+    box-shadow: var(--neuPull), var(--neuPull);
 }
 input[type="date"]:active{
-    box-shadow: var(--neuPush);
+    box-shadow: var(--neuPush), var(--neuPush);
 }
+
+/* Styles for YipEditor */        
+.yipMaster{
+    font-size: 2ch;
+    position: relative;
+    border: 2px solid white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-evenly;
+
+    overflow-y: hidden;
+    background-color: white;
+    border-radius: 5px;   
+        width: 30vw;
+        height: 30vw;
+}
+
+.yipRun{
+    border: 2px solid white; 
+    position: absolute;
+    border-radius: 100%;
+    width: 4vw;
+    height: 4vw;
+    margin-top: -2vw;
+    top: 82%;
+    right: 6%;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+        font-size: 2vw;
+        padding-left: 0.8vw;
+}
+.yipRun:active{
+    box-shadow: var(--neuPush);
+    transform: scale(1);
+}
+
+.yipConsole{
+    border: 2px solid white; 
+    background-color: rgb(30,30,30);
+    color: white;
+    width: calc(98% - 1ch);
+    height: 16%;
+    z-index: 1;
+    margin-bottom: -2px;
+    padding-left: 1ch;
+    display: flex;
+    align-items: center;
+    font-family: monospace;
+
+    word-wrap:break-word;
+    overflow-wrap: anywhere;
+    overflow-y: auto;
+}
+
+.CodeMirror {
+    width: 98%;
+    min-height: calc(80.9% - 1ch);
+    max-height: calc(81% - 1ch);
+    resize: none;
+    z-index: 0;
+    padding-bottom: 1ch;
+}
+
+.yipInvisible{
+    display: none;
+}
+
 
 /* Responsive: */
 @media all and (max-width:780px){
@@ -259,6 +329,11 @@ input[type="date"]:active{
     }
     input[type="checkbox"]:checked + label div span{
         margin-left: 5.9vw;
+    }
+
+    /* Now for date: */
+    input[type="date"]{
+        height: 5vw;
     }
     
 }
