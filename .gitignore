@@ -1,0 +1,17 @@
+backend/venv
+backend/src/__pycache__
+backend/src/database/__pycache__
+backend/src/static/users/*
+backend/src/example_data.py
+frontend/dist
+frontend/node_modules
+ngrok/
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
