@@ -2,6 +2,7 @@ backend/venv
 backend/src/__pycache__
 backend/src/database/__pycache__
 backend/src/static/users/*
+!backend/src/static/users/.gitkeep
 backend/src/example_data.py
 frontend/dist
 frontend/node_modules

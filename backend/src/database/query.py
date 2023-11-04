@@ -77,7 +77,9 @@ def add_user(data_):
     currentCoverPic = ""
     currentProfilePic = ""
     positiveList = json.dumps([])
+    externalPositiveList = json.dumps([])
     negativeList = json.dumps([])
+    externalNegativeList = json.dumps([])
     userSettings = json.dumps({"key": "value"})
 
     try:
@@ -89,10 +91,10 @@ def add_user(data_):
         )
         cursor = connection.cursor()
         insert_query = """
-            INSERT INTO users (name, surname, birthday, gender, email, password, currentCoverPic, currentProfilePic, registrationDate, positiveList, negativeList, userSettings)
+            INSERT INTO users (name, surname, birthday, gender, email, password, currentCoverPic, currentProfilePic, registrationDate, positiveList, externalPositiveList, negativeList, externalNegativeList, userSettings)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s, %s, %s)
         """
-        values = (name, surname, birthday, gender, email, password, currentCoverPic, currentProfilePic, positiveList, negativeList, userSettings)
+        values = (name, surname, birthday, gender, email, password, currentCoverPic, currentProfilePic, positiveList, externalPositiveList, negativeList, externalNegativeList, userSettings)
         cursor.execute(insert_query, values)
         connection.commit()
         user_id = cursor.lastrowid
@@ -178,10 +180,12 @@ def get_user_data(get_by, data_):
             "currentCoverPic": user_data[9],
             "apiCode": 0 if user_data[10] in (None, "") else 1,
             "positiveList": json.loads(user_data[11]),
-            "negativeList": json.loads(user_data[12]),
-            "userSettings": json.loads(user_data[13]),
-            "theme": user_data[14],
-            "registrationDate": str(user_data[15]), # Arreglar
+
+            "negativeList": json.loads(user_data[13]),
+
+            "userSettings": json.loads(user_data[15]),
+            "theme": user_data[16],
+            "registrationDate": str(user_data[17]), # Arreglar
         }
 
         cursor.close()
@@ -484,3 +488,47 @@ def update_profile(id_, data_):
     finally:
         cursor.close()
         connection.close()
+
+
+def create_comment(post_id, owner_id, data_, origin):
+    if "content" not in data_:
+        return json_status(True, 0, "Empty content")
+
+    content = data_["content"]
+    media = data_["media"]
+
+    try:
+        connection = mysql.connector.connect(
+            host=HOST,
+            user=USER,
+            password=PASS,
+            database="yip_net"
+        )
+        cursor = connection.cursor()
+
+        # Inserción de comentario
+        insert_query = """
+            INSERT INTO comments (postId, ownerId, content, media, commentDate, origin)
+            VALUES (%s, %s, %s, %s, NOW(), %s)
+        """
+        values = (post_id, owner_id, content, media, origin)
+        cursor.execute(insert_query, values)
+        comment_id = cursor.lastrowid
+
+        # Actualización de commentCount en la tabla "posts"
+        update_query = """
+            UPDATE posts
+            SET commentCount = commentCount + 1
+            WHERE id = %s
+        """
+        cursor.execute(update_query, (post_id,))
+
+        connection.commit()
+        cursor.close()
+        connection.close()
+
+        return json_status(True, 1, {"response": "Comment added.", "comment_created_id": comment_id})
+
+    except mysql.connector.Error as error:
+        print(f"Error al conectarse a la base de datos: {error}")
+        return json_status(False, 0, "Database connection error.")

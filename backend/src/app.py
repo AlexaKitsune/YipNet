@@ -162,8 +162,6 @@ def update_profile():
         response =  query.update_profile(user_id, data)["json"]
 
         print(response)
-
-
                 
         return jsonify(response)
     except Exception as e:
@@ -191,6 +189,36 @@ def api_key(action):
         return jsonify({"status": "error", "message": str(e)})
 
 
+@app.route('/comment/<int:post_id>', methods=['POST'])
+@jwt_required()
+def publish_comment(post_id):
+    try:
+        current_user_email = get_jwt_identity()
+        user_id = query.get_user_data("email", {"email": current_user_email})
+        user_id = user_id["json"]["message"]["id"]
+
+        if 'content' in request.form: # Se está enviando contenido JSON
+            data = {
+                "content": request.form.get('content'),
+                "media": "",
+            }
+
+        if 'media' in request.files: # Se están enviando archivos
+            functions.create_folder(user_id)
+            media_files = request.files.getlist('media')
+            media_file_names = []
+
+            for media_file in media_files:
+                print("MEDIA FILES: ")
+                file_name = secure_filename(media_file.filename)
+                media_file_names.append(file_name)
+                media_file.save(os.path.join("./src/static/users/", str(user_id), file_name))
+            data["media"] = json.dumps(media_file_names)
+
+        response = query.create_comment(post_id, user_id, data, 'orig 0.0.0.0')
+        return jsonify(response["json"])
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
 
 
 if __name__ == '__main__':

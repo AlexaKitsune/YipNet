@@ -5,25 +5,27 @@
             <div><button>▲</button> {{ votes }} <button>▼</button></div>
             <div><button>❤</button> {{ hearts }}</div>
             <div><button>⤷</button> {{ shares }}</div>
-            <div class="comment-btn-post activated-btn-post"><a :href="`#comments-input-${postId}`">Comment</a></div>
+            <div class="comment-btn-post activated-btn-post" @click="toCommentBox()">Comment</div>
         </div>
 
         <div class="comments-load">
+            <!-- "See (num of comments of post) comments" button -->
             <!-- Un v-for con toda la carga de comentarios. Lo siguiente es solo de ejemplo. -->
             <div class="comment-user-info">
                 <div class="comment-userimg" :style="`background-image:url('${require('../assets/images/default-user.jpg')}');`"></div>
                 <div>
                     <p class="comment-username">Alexa Kitsune</p>
                     <p class="comment-date">20/09/2023 03:12</p>
+                    <div><MarkdownRenderer :postId="postId+'commentId'" :text="'Comentario de ejemplo'"/></div>
                 </div>
             </div>
         </div>
 
-        <div class="comments-input" :id="`comments-input-${postId}`">
+        <div class="comments-input">
             <div class="comments-text">
                 <textarea ref="commentTextarea" @keyup="validateTextarea()" oninput="this.style.height = ''; this.style.height = this.scrollHeight +'px'"></textarea>
                 <div class="comment-markdown-preview" v-if="preview">
-                    <MarkdownRenderer :postId="postId" :text="inputText"/>
+                    <MarkdownRenderer :postId="postId+'_'+postId" :text="inputText"/>
                 </div>
             </div>
             <div class="comments-input-media-preview">
@@ -54,7 +56,7 @@
                     </button>
 
                 </div>
-                <button class="comment-btn-post" ref="commentPostBtn">Post</button>
+                <button class="comment-btn-post" ref="commentPostBtn" @click="publishComment()">Post</button>
             </div>
         </div>
 
@@ -126,12 +128,74 @@ export default {
             this.$refs.fileInput.value = '';
         },
 
+        toCommentBox(){
+            this.$refs.commentTextarea.scrollIntoView();
+            this.$refs.commentTextarea.focus();
+        },
+
         getComments(){
             // Get all comments in the array by id. 
         },
 
-        postComment(){
+        publishComment() {
+            function getCurrentDateTime() {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                const day = now.getDate().toString().padStart(2, '0');
+                const hours = now.getHours().toString().padStart(2, '0');
+                const minutes = now.getMinutes().toString().padStart(2, '0');
+                return `${year}-${month}-${day}-${hours}-${minutes}`;
+            }
 
+            function renameFileWithTimestamp(file) {
+                const timestamp = getCurrentDateTime();
+                // eslint-disable-next-line
+                const fileExtension = file.name.split('.').pop(); // Obtiene la extensión del archivo
+                const newFileName = `${timestamp}-${file.name}`;
+                return new File([file], newFileName, { type: file.type });
+            }
+
+            const content = this.inputText;
+            const mediaFiles = this.selectedFiles; // Obtén los archivos seleccionados
+
+            console.log(content, mediaFiles)
+
+            if (content == "") {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("content", content);
+
+            // Itera sobre los archivos seleccionados y agrégalos al formData
+            for (let i = 0; i < mediaFiles.length; i++) {
+                const file = mediaFiles[i];
+                const renamedFile = renameFileWithTimestamp(file);
+                formData.append("media", renamedFile);
+            }
+
+            const token = JSON.parse(localStorage.getItem("yipUserData")).token;
+            fetch(this.$ENDPOINT + "/comment/" + this.postId, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}` // Incluye el token JWT en el encabezado
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Respuesta del servidor:', data);
+                if(data.status == "ok"){
+                    this.inputText = "";
+                    this.$refs.commentTextarea.value = "";
+                    this.$refs.commentTextarea.style.height = "fit-content";
+                    this.clearMedia();    
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
         }
     },
     components: { MarkdownRenderer }

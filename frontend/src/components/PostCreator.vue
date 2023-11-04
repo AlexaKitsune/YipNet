@@ -130,6 +130,24 @@ export default {
         },
 
         publishPost() {
+            function getCurrentDateTime() {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                const day = now.getDate().toString().padStart(2, '0');
+                const hours = now.getHours().toString().padStart(2, '0');
+                const minutes = now.getMinutes().toString().padStart(2, '0');
+                return `${year}-${month}-${day}-${hours}-${minutes}`;
+            }
+
+            function renameFileWithTimestamp(file) {
+                const timestamp = getCurrentDateTime();
+                // eslint-disable-next-line
+                const fileExtension = file.name.split('.').pop(); // Obtiene la extensión del archivo
+                const newFileName = `${timestamp}-${file.name}`;
+                return new File([file], newFileName, { type: file.type });
+            }
+
             const isNSFW = this.$refs.postCreatorNSFW.checked;
             const isPrivate = this.$refs.postCreatorPrivate.checked;
             const content = this.inputText;
@@ -146,8 +164,9 @@ export default {
 
             // Itera sobre los archivos seleccionados y agrégalos al formData
             for (let i = 0; i < mediaFiles.length; i++) {
-                console.log("File appended")
-                formData.append("media", mediaFiles[i]);
+                const file = mediaFiles[i];
+                const renamedFile = renameFileWithTimestamp(file);
+                formData.append("media", renamedFile);
             }
 
             const token = JSON.parse(localStorage.getItem("yipUserData")).token;

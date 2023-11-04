@@ -49,6 +49,7 @@ def create_database_and_tables():
             apiOrigin VARCHAR(255),
             privatePost TINYINT(1) NOT NULL,
             nsfwPost TINYINT(1) NOT NULL,
+            commentCount BIGINT(20) DEFAULT 0,
             origin VARCHAR(255)
         );
         """
@@ -59,6 +60,7 @@ def create_database_and_tables():
             postId BIGINT(20) NOT NULL,
             ownerId BIGINT(20) NOT NULL,
             content MEDIUMTEXT NOT NULL,
+            media MEDIUMTEXT,
             commentDate DATETIME NOT NULL,
             origin VARCHAR(255)
         );
@@ -78,7 +80,9 @@ def create_database_and_tables():
             currentCoverPic VARCHAR(255) NOT NULL,
             apiCode VARCHAR(63),
             positiveList JSON,
+            externalPositiveList JSON,
             negativeList JSON,
+            externalNegativeList JSON,
             userSettings JSON NOT NULL,
             theme VARCHAR(63),
             registrationDate DATETIME NOT NULL,

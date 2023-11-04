@@ -5,7 +5,7 @@
         <div></div>
         <div v-if="userData.id">
             <div v-if="userData.id" class="nav-pic" @click="toProfile(userData.id)">
-                <div :style="`background-image:url('${this.$ENDPOINT}/static/users/${userData.id}/${userData.currentProfilePic}');`"></div>
+                <div :style="`background-image:url('${this.$ENDPOINT}/static/users/${userData.id}/${userData.currentProfilePic}');`" class="updater-profile-pic"></div>
             </div>
             <button @click="reload()"><a href="#/settings">⚙️</a></button>
         </div>

@@ -3,18 +3,18 @@
 
         <div class="profile-cover"><!--Portada cargada en background-image:url()-->
             <div class="profile-cover-img">
-                <div :style="`background-image:url('${this.$ENDPOINT}/static/users/${profileData.id}/${profileData.currentCoverPic}');`"></div>
+                <div :style="`background-image:url('${this.$ENDPOINT}/static/users/${profileData.id}/${profileData.currentCoverPic}');`" class="sub-cover-pic updater-cover-pic"></div>
                 <button class="profile-change-cover" v-if="profileData.id == myId" @click="updatePics(true, 'cover')">📷</button>
             </div>
             <div class="profile-pic">
-                <div :style="`background-image:url('${this.$ENDPOINT}/static/users/${profileData.id}/${profileData.currentProfilePic}');`" class="profile-pic"></div>
+                <div :style="`background-image:url('${this.$ENDPOINT}/static/users/${profileData.id}/${profileData.currentProfilePic}');`" class="profile-pic sub-profile-pic updater-profile-pic"></div>
                 <button class="profile-change-pic" v-if="profileData.id == myId" @click="updatePics(true, 'profile')">📷</button>
             </div><!--Imagen de perfil-->
         </div>
 
         <div class="profile-info">
             <div>
-                <h1>{{ profileData.surname }}   </h1>
+                <h1>{{ profileData.name  +" "+ profileData.surname }}   </h1>
                 <p class="profile-arroba">@</p>
                 <p>
                     <span v-if="description">{{ description }}</span>
@@ -145,10 +145,17 @@ export default {
                 .then(data => {
                     if(data.status == "ok"){
                         let yipUserData = JSON.parse(localStorage.getItem("yipUserData"));
-                        if(this.imageToUpdate == "profile")
+                        if(this.imageToUpdate == "profile"){
                             yipUserData.userData.currentProfilePic = data.message.image_added;
-                        else
+                            document.querySelectorAll(".updater-profile-pic").forEach(pic => { 
+                                pic.style.backgroundImage = `url(${this.$ENDPOINT}/static/users/${this.profileData.id}/${data.message.image_added})`;
+                            });
+                        }else{
                             yipUserData.userData.currentCoverPic = data.message.image_added;
+                            document.querySelectorAll(".updater-cover-pic").forEach(pic => { 
+                                pic.style.backgroundImage = `url(${this.$ENDPOINT}/static/users/${this.profileData.id}/${data.message.image_added})`;
+                            });
+                        }
                         localStorage.setItem("yipUserData", JSON.stringify(yipUserData));
                         this.updatePics(false);
                     }
@@ -305,7 +312,16 @@ export default {
     align-items: center;
 }
 
+.sub-profile-pic, .sub-cover-pic{
+    pointer-events: none;
+    z-index: 1;
+}
+
 /* Update data */
+.profile-change-pic, .profile-change-cover{
+    z-index: 2;
+}
+
 .profile-change-pic:hover, .profile-change-cover:hover{
     background-color: rgba(0, 0, 0, 0.1);
     border-radius: 1ch;

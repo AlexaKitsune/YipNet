@@ -4,7 +4,13 @@
     <div class="post-layout" v-if="loadedPostData">
 
       <section class="post-user-info">
-        <div class="post-userimg" :style="`background-image:url('${loadedPostData?.ownerData?.url_pic || require('../assets/images/default-user.jpg')}');`"><a v-if="loadedPostData.ownerData" :href="toProfile(loadedPostData.ownerData.id)"></a></div>
+        <div class="post-userimg updater-profile-pic"
+          :style="`background-image:url('${
+            this.$ENDPOINT + '/static/users/' + loadedPostData?.ownerData?.id +'/'+ loadedPostData?.ownerData?.currentProfilePic || require('../assets/images/default-user.jpg')
+          }');`
+        ">
+          <a v-if="loadedPostData.ownerData" :href="toProfile(loadedPostData.ownerData.id)"></a>
+        </div>
         <div>
           <p class="post-username" v-if="loadedPostData.ownerData"><a :href="toProfile(loadedPostData.ownerData.id)">{{ loadedPostData?.ownerData?.name + ' ' + loadedPostData?.ownerData?.surname }}</a></p>
           <p class="post-date"><a :href="'#/post~'+postData.id">{{ postData?.postDate }}</a></p>
@@ -114,6 +120,7 @@ export default {
   height: 5ch;
   border-radius: 100vw;
   background-size: cover;
+  background-position: center;
   margin-right: 2ch;
 }
 
