@@ -1,6 +1,8 @@
 backend/venv
 backend/src/__pycache__
 backend/src/database/__pycache__
+backend/src/static/public/*
+!backend/src/static/public/.gitkeep
 backend/src/static/users/*
 !backend/src/static/users/.gitkeep
 backend/src/example_data.py

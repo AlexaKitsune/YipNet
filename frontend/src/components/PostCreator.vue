@@ -148,8 +148,8 @@ export default {
                 return new File([file], newFileName, { type: file.type });
             }
 
-            const isNSFW = this.$refs.postCreatorNSFW.checked;
-            const isPrivate = this.$refs.postCreatorPrivate.checked;
+            const isNSFW = this.$refs.postCreatorNSFW.checked ? 1 : 0;
+            const isPrivate = this.$refs.postCreatorPrivate.checked ? 1 : 0;
             const content = this.inputText;
             const mediaFiles = this.selectedFiles; // Obtén los archivos seleccionados
 

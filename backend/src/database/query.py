@@ -92,7 +92,7 @@ def add_user(data_):
         cursor = connection.cursor()
         insert_query = """
             INSERT INTO users (name, surname, birthday, gender, email, password, currentCoverPic, currentProfilePic, registrationDate, positiveList, externalPositiveList, negativeList, externalNegativeList, userSettings)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s, %s, %s, %s, %s)
         """
         values = (name, surname, birthday, gender, email, password, currentCoverPic, currentProfilePic, positiveList, externalPositiveList, negativeList, externalNegativeList, userSettings)
         cursor.execute(insert_query, values)
@@ -200,17 +200,10 @@ def get_user_data(get_by, data_):
 
 def create_post(owner_id, data_):
     print("CREACION DE POST:")
-    print(owner_id)
+    print(owner_id, data_)
 
-    if(data_["privatePost"] == True):
-        privatePost = 1
-    else:
-        privatePost = 0
-
-    if(data_["nsfwPost"] == True):
-        nsfwPost = 1
-    else:
-        nsfwPost = 0
+    privatePost = data_["privatePost"]
+    nsfwPost = data_["nsfwPost"]
 
     if("content" not in data_):
         return json_status(True, 0, "Empty content.")
@@ -260,6 +253,7 @@ def list_posts(target_owner_id, my_id):
                 FROM posts p
                 JOIN users u ON p.ownerId = u.id
                 WHERE p.ownerId = %s
+                ORDER BY p.postDate DESC  -- Ordenar en orden descendente por fecha
             """
         else:
             query = """
@@ -267,6 +261,7 @@ def list_posts(target_owner_id, my_id):
                 FROM posts p
                 JOIN users u ON p.ownerId = u.id
                 WHERE p.ownerId = %s AND p.privatePost = 0
+                ORDER BY p.postDate DESC  -- Ordenar en orden descendente por fecha
             """
         cursor.execute(query, (target_owner_id,))
         result = cursor.fetchall()
@@ -515,6 +510,19 @@ def create_comment(post_id, owner_id, data_, origin):
         cursor.execute(insert_query, values)
         comment_id = cursor.lastrowid
 
+        # Recuperar el comentario insertado
+        select_query = """
+            SELECT comments.id, comments.postId, comments.ownerId, comments.content, comments.media, comments.commentDate, users.name, users.surname, users.currentProfilePic
+            FROM comments
+            LEFT JOIN users ON comments.ownerId = users.id
+            WHERE comments.id = %s
+        """
+        cursor.execute(select_query, (comment_id,))
+        comment_data = cursor.fetchone()
+
+        column_names = cursor.column_names  # Obtiene los nombres de las columnas
+        inserted_comment = dict(zip(column_names, comment_data))  # Combina los nombres de las columnas con los valores
+
         # Actualización de commentCount en la tabla "posts"
         update_query = """
             UPDATE posts
@@ -527,7 +535,44 @@ def create_comment(post_id, owner_id, data_, origin):
         cursor.close()
         connection.close()
 
-        return json_status(True, 1, {"response": "Comment added.", "comment_created_id": comment_id})
+        return json_status(True, 1, {"response": "Comment added", "comment": inserted_comment})
+
+    except mysql.connector.Error as error:
+        print(f"Error al conectarse a la base de datos: {error}")
+        return json_status(False, 0, "Database connection error.")
+
+
+def list_comments(post_id, user_id):
+    try:
+        connection = mysql.connector.connect(
+            host=HOST,
+            user=USER,
+            password=PASS,
+            database="yip_net"
+        )
+        cursor = connection.cursor(dictionary=True)  # Configura el cursor para devolver resultados como diccionarios
+
+        query = """
+            SELECT c.id AS comment_id, c.postId, c.ownerId AS comment_owner_id, c.content AS comment_content,
+                   c.media AS comment_media, c.commentDate, u.name AS user_name, u.surname AS user_surname,
+                   u.currentProfilePic AS user_profile_pic
+            FROM comments c
+            LEFT JOIN users u ON c.ownerId = u.id
+            WHERE c.postId = %s
+            AND (
+                (
+                    (SELECT privatePost FROM posts WHERE id = %s) = 0)
+                OR
+                (c.ownerId = %s AND (SELECT privatePost FROM posts WHERE id = %s) = 1)
+            )
+        """
+
+        cursor.execute(query, (post_id, post_id, user_id, post_id))
+        result = cursor.fetchall()
+        cursor.close()
+        connection.close()
+
+        return json_status(True, 1, {"comment_list": result})
 
     except mysql.connector.Error as error:
         print(f"Error al conectarse a la base de datos: {error}")

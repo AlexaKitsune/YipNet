@@ -2,6 +2,8 @@
     <main>
         <h1>Settings ⚙️⚙️⚙️</h1>
 
+        <button class="MAIN-BUTTON logout" @click="logOut()">Log out</button>
+
         {{ userData }}
 
         <section class="settings-general">
@@ -215,6 +217,14 @@ export default {
             .then(data => {
                 console.log(data);
             })
+        },
+
+        logOut(){
+            localStorage.clear();
+            sessionStorage.clear();
+            setTimeout(() => {
+                window.location.reload();
+            }, 80);
         }
 
     },
@@ -237,6 +247,17 @@ main > section{
     width: 90%;
     display: flex;
     flex-direction: column;
+}
+
+main > .logout{
+    align-self: flex-end;
+    margin-right: 5vw;
+    color: orange;
+}
+
+main > .logout:hover{
+    background-color: orange;
+    color: black;
 }
 
 main > section > button{

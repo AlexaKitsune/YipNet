@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_session import Session
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
@@ -216,6 +216,20 @@ def publish_comment(post_id):
             data["media"] = json.dumps(media_file_names)
 
         response = query.create_comment(post_id, user_id, data, 'orig 0.0.0.0')
+        return jsonify(response["json"])
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+
+@app.route('/comment_list/<int:post_id>', methods=['GET'])
+@jwt_required()
+def get_comment_list(post_id):
+    try:
+        current_user_email = get_jwt_identity()
+        user_id = query.get_user_data("email", {"email": current_user_email})
+        user_id = user_id["json"]["message"]["id"]
+
+        response = query.list_comments(post_id, user_id)
         return jsonify(response["json"])
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})

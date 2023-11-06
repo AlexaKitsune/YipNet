@@ -22,7 +22,7 @@
                 </p>
             </div>
             <div>
-                0
+                {{ profileData.positiveList?.length }}
             </div>
         </div>
 
@@ -35,8 +35,12 @@
                 <button @click="updatePics(false)">+</button>
                 <p ref="updateWhat"></p>
                 <div class="update-pics-area">
-                    <div v-if="imageToUpdate === 'cover'" class="update-pic-cover" :style="{ 'background-image': 'url(' + imageFileToUpdate + ')' }"></div>
-                    <div v-if="imageToUpdate === 'profile'" class="update-pic-profile" :style="{ 'background-image': 'url(' + imageFileToUpdate + ')' }"></div>
+                    <div v-if="imageToUpdate === 'cover'" class="update-pic-cover" 
+                        :style="imageFileToUpdate == '' ? `background-image:url('${this.$ENDPOINT}/static/users/${profileData.id}/${profileData.currentCoverPic}'); opacity: 0.5;` : `background-image: url(${imageFileToUpdate});`
+                    "></div>
+                    <div v-if="imageToUpdate === 'profile'" class="update-pic-profile" 
+                        :style="imageFileToUpdate == '' ? `background-image:url('${this.$ENDPOINT}/static/users/${profileData.id}/${profileData.currentProfilePic}'); opacity: 0.5;` : `background-image: url(${imageFileToUpdate});`
+                    "></div>
                     <input type="file" @change="handleImageUpload" name="media" accept="image/*" ref="inputImageToUpload">
                 </div>
                 <div class="update-pics-buttons">

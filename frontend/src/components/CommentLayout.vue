@@ -10,13 +10,23 @@
 
         <div class="comments-load">
             <!-- "See (num of comments of post) comments" button -->
+            <button @click="getComments()" class="load-comments-btn MAIN-BUTTON">See {{ numOfComments }} comments</button>
             <!-- Un v-for con toda la carga de comentarios. Lo siguiente es solo de ejemplo. -->
-            <div class="comment-user-info">
-                <div class="comment-userimg" :style="`background-image:url('${require('../assets/images/default-user.jpg')}');`"></div>
-                <div>
-                    <p class="comment-username">Alexa Kitsune</p>
-                    <p class="comment-date">20/09/2023 03:12</p>
-                    <div><MarkdownRenderer :postId="postId+'commentId'" :text="'Comentario de ejemplo'"/></div>
+            <div v-for="(comment, index) in commentList" :key="index" class="comment-user-info">
+                <div class="comment-userimg"
+                    :style="`background-image:url('${
+                        this.$ENDPOINT + '/static/users/' + comment.comment_owner_id +'/'+ comment.user_profile_pic || require('../assets/images/default-user.jpg')
+                    }');`
+                "></div>
+                <div class="comment-contents">
+                    <div class="comment-panel">
+                        <span v-if="parseInt(myId) == parseInt(comment.comment_owner_id)" class="del-comment">🗑️</span>
+                        <span v-else>🚨</span>
+                    </div>
+                    <p class="comment-username"><a class="comment-username" :href="toProfile(comment.ownerId)">{{ comment.user_name}} {{ comment.user_surname }}</a></p>
+                    <p class="comment-date">{{ comment.commentDate }}</p>
+                    <div><MarkdownRenderer :postId="postId+comment.comment_id" :text="comment.comment_content"/></div>
+                    <MediaDisplayer v-if="comment.comment_media" class="post-media" :images="comment.comment_media" :ownerId="comment.comment_owner_id"/>
                 </div>
             </div>
         </div>
@@ -65,11 +75,13 @@
 
 <script>
 import MarkdownRenderer from './postViewer/MarkdownRenderer.vue';
+import MediaDisplayer from './postViewer/MediaDisplayer.vue';
 
 export default {
     name: 'CommentLayout',
     props: {
         postId: String,
+        numOfComments: Number
     },
     data() {
         return {
@@ -79,6 +91,8 @@ export default {
             inputText: "",
             preview: false,
             selectedFiles: [],
+            commentList: [],
+            myId: JSON.parse(localStorage.getItem("yipUserData")).userData.id
         };
     },
     methods: {
@@ -134,7 +148,26 @@ export default {
         },
 
         getComments(){
-            // Get all comments in the array by id. 
+            const token = JSON.parse(localStorage.getItem("yipUserData")).token;
+            fetch(this.$ENDPOINT+"/comment_list/" + this.postId, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token // Donde "token" es el token de autorización que deseas enviar
+                }})
+                .then(response => response.json())
+                .then(data => {
+                    if(data.status == "ok"){
+                        this.commentList = data.message.comment_list;
+                    }
+                })
+                .catch(error => {
+                    console.error("Error: ", error);
+                });
+        },
+
+        toProfile(id_){
+            const profileUrl = window.location.href.split("#")[0];
+            return profileUrl + "#/profile~" + id_ ;
         },
 
         publishComment() {
@@ -190,15 +223,17 @@ export default {
                     this.inputText = "";
                     this.$refs.commentTextarea.value = "";
                     this.$refs.commentTextarea.style.height = "fit-content";
-                    this.clearMedia();    
+                    this.clearMedia();   
+                    console.log("DATA created:", data.message.comment)
+                    this.commentList.push(data.message.comment);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
             });
-        }
+        },
     },
-    components: { MarkdownRenderer }
+    components: { MarkdownRenderer, MediaDisplayer }
 }
 </script>
 
@@ -241,16 +276,49 @@ section
 }
 
 /* Comments load user info */
-.comment-user-info{
+.comments-load{
+    display: flex;
+    flex-direction: column;
+    max-width: 485px;
+}
+
+.comment-user-info{    
   display: flex;
-  align-items: center;
+  position: relative;
   font-family: sans-serif;
   margin: 2ch 0;
 }
 
+.comment-panel{
+    width: 100%;
+    text-align: right;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    justify-self: flex-end;
+    align-self: flex-end;
+}
+
+.comment-panel span:not(.del-comment){
+    opacity: 0.5;
+    filter: grayscale(1);
+}
+
+.comment-panel span:hover{
+    opacity: 1;
+    cursor: pointer;
+    filter: grayscale(0);
+}
+
+.del-comment{
+    opacity: 0.5;
+    filter: grayscale(0.5);
+}
+
 .comment-userimg{
-  width: 4ch;
-  height: 4ch;
+  width: 5ch !important;
+  height: 5ch !important;
+  aspect-ratio: 1 / 1;
   border-radius: 100vw;
   background-size: cover;
   margin-right: 1.4ch;
@@ -260,8 +328,19 @@ section
   margin: 0.4ch;
 }
 
+.comment-contents{
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
 .comment-username{
-  color: aqua;
+  color: aqua !important;
+  text-decoration: none;
+}
+
+.comment-username:hover{
+    text-decoration: underline;
 }
 
 .comment-date{
@@ -409,5 +488,30 @@ section
     height: 100%;
     opacity: 0;
     cursor: pointer;
+}
+
+.load-comments-btn{
+    border: none;
+    border-radius: 0.5ch;
+    margin: 1ch 0;
+    padding: 0.5ch 0;
+    background-color: transparent;
+    cursor: pointer;
+    margin-left: 1%;
+}
+
+/********************************************************************
+* RESPONSIVE
+********************************************************************/
+@media all and (max-width:780px){
+
+    .comments-load{
+        max-width: unset;
+    }
+
+    .load-comments-btn{
+        margin-left: 0;
+    }
+
 }
 </style>

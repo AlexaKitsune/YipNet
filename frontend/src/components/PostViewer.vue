@@ -22,7 +22,7 @@
         <MediaDisplayer v-if="loadedPostData.media" class="post-media" :images="loadedPostData.media" :ownerId="loadedPostData.ownerData.id"/>
       </section>
 
-      <CommentLayout :postId="postData.id" class="post-comments"/>
+      <CommentLayout :postId="postData.id" :numOfComments="postData.commentCount" class="post-comments"/>
 
     </div>
   
@@ -76,6 +76,7 @@ export default {
       "apiOrigin": data.apiOrigin,
       "nsfwPost": data.nsfwPost,
       "privatePost": data.privatePost,
+      "commentCount": data.commentCount
     }
 
     /*console.log(this.loadedPostData);
@@ -88,7 +89,6 @@ export default {
 
 };
 </script>
-  
 
 <style scoped>
 .post-layout{

@@ -13,7 +13,7 @@
     <!-- Mostrar PostCreator solo si la sesión está activa -->
     <div v-if="sessionActive">
       <div v-if="postCreationActive"><PostCreator id="PostCreator-component-MAIN"/></div>
-      <div class="post-creator-launch" @click="switchPostCreator(true)" v-else></div>
+      <div class="post-creator-launch" @click="switchPostCreator(true)" v-else>✎</div>
     </div>
   </main>
 </template>
@@ -127,10 +127,13 @@ export default {
 .post-creator-launch{
     position: absolute;
     display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5ch;
     right: 2ch;
     bottom: 2ch;
-    width: 7ch;
-    height: 7ch;
+    width: 5ch;
+    height: 5ch;
     border-radius: 100vw;
     position: fixed;
     background-color: blueviolet;
