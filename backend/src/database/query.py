@@ -180,9 +180,9 @@ def get_user_data(get_by, data_):
             "currentCoverPic": user_data[9],
             "apiCode": 0 if user_data[10] in (None, "") else 1,
             "positiveList": json.loads(user_data[11]),
-
+            "externalPositiveList": json.loads(user_data[12]),
             "negativeList": json.loads(user_data[13]),
-
+            "externalNegativeList": json.loads(user_data[14]),
             "userSettings": json.loads(user_data[15]),
             "theme": user_data[16],
             "registrationDate": str(user_data[17]), # Arreglar
@@ -573,6 +573,74 @@ def list_comments(post_id, user_id):
         connection.close()
 
         return json_status(True, 1, {"comment_list": result})
+
+    except mysql.connector.Error as error:
+        print(f"Error al conectarse a la base de datos: {error}")
+        return json_status(False, 0, "Database connection error.")
+
+
+def manage_follow(my_id, target_id, add_):
+    try:
+        connection = mysql.connector.connect(
+            host=HOST,
+            user=USER,
+            password=PASS,
+            database="yip_net"
+        )
+        cursor = connection.cursor()
+
+        my_id = int(my_id)
+        target_id = int(target_id)
+
+        print("IDS", my_id, target_id, add_)
+
+        if add_:
+            response_text = "Followed"
+            # Agregar el 'id' del usuario objetivo a mi 'positiveList', si no existe.
+            update_query1 = """
+                UPDATE users
+                SET positiveList = JSON_ARRAY_APPEND(positiveList, '$', %s)
+                WHERE id = %s
+                AND NOT JSON_CONTAINS(positiveList, %s)
+            """
+            cursor.execute(update_query1, (target_id, my_id, target_id))
+            # Agregar mi 'id' al 'externalPositiveList' del usuario objetivo, si no existe.
+            update_query2 = """
+                UPDATE users
+                SET externalPositiveList = JSON_ARRAY_APPEND(externalPositiveList, '$', %s)
+                WHERE id = %s
+                AND NOT JSON_CONTAINS(externalPositiveList, %s)
+            """
+            cursor.execute(update_query2, (my_id, target_id, my_id))
+        else:
+            response_text = "Unfollowed"
+            # Eliminar "target_id" del array del campo "positiveList" donde el id = my_id.
+            # Eliminar "my_id" del array del campo "externalPositiveList" donde el id = target_id.
+            select_query_positiveList = "SELECT positiveList FROM users WHERE id = %s"
+            cursor.execute(select_query_positiveList, (my_id,))
+            positiveList = cursor.fetchone()
+            positiveList = json.loads(positiveList[0].decode('utf-8'))
+            select_query_externalPositiveList = "SELECT externalPositiveList FROM users WHERE id = %s"
+            cursor.execute(select_query_externalPositiveList, (target_id,))
+            externalPositiveList = cursor.fetchone()
+            externalPositiveList = json.loads(externalPositiveList[0].decode('utf-8'))
+
+            if(target_id in positiveList and my_id in externalPositiveList):
+                positiveList.remove(target_id)
+                externalPositiveList.remove(my_id)
+            
+                positiveList = json.dumps(positiveList)
+                externalPositiveList = json.dumps(externalPositiveList)
+
+                update_query1 = "UPDATE users SET positiveList = %s WHERE id = %s"
+                cursor.execute(update_query1, (positiveList, my_id))
+                update_query2 = "UPDATE users SET externalPositiveList = %s WHERE id = %s"
+                cursor.execute(update_query2, (externalPositiveList, target_id))
+
+        connection.commit()
+        cursor.close()
+        connection.close()
+        return json_status(True, 1, {"response": response_text, "target_user": target_id})
 
     except mysql.connector.Error as error:
         print(f"Error al conectarse a la base de datos: {error}")

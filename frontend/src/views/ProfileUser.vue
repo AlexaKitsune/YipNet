@@ -21,8 +21,10 @@
                     <span v-else class="no-description">Add description.</span>
                 </p>
             </div>
-            <div>
-                {{ profileData.positiveList?.length }}
+            <div class="profile-follow-info">
+                <button v-if="myId != targetId" class="BIG-BUTTON MAIN-BUTTON" @click="manageFollow(true)">Follow</button>
+                {{ profileData.externalPositiveList }}
+                {{ profileData.positiveList }}
             </div>
         </div>
 
@@ -65,7 +67,9 @@ export default {
             myId: JSON.parse(localStorage.getItem("yipUserData")).userData.id,
             postList: [],
             imageToUpdate: '',
-            imageFileToUpdate: ''
+            imageFileToUpdate: '',
+            targetId: 0,
+            myPositiveList: []
         }
     },
 
@@ -73,6 +77,7 @@ export default {
         getUser(){
             let userId = window.location.href.split("~")[1];
             userId = parseInt(userId);
+            this.targetId = userId;
             console.log(userId)
 
             if(!isNaN(userId)){
@@ -167,6 +172,28 @@ export default {
                 .catch(error => {
                     console.error('Error en la carga de la imagen:', error);
                 });
+        },
+
+        manageFollow(followOrUnfollow_){
+            console.log(followOrUnfollow_);
+            console.log(this.myId);
+            console.log(this.targetId);
+
+            const token = JSON.parse(localStorage.getItem("yipUserData")).token;
+            fetch(this.$ENDPOINT+"/manage_follow/" + this.targetId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` // Incluye el token JWT en el encabezado
+                },
+                body: JSON.stringify({
+                    "followOrUnfollow": followOrUnfollow_ ? 1 : 0
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+            })
         }
 
     },
@@ -304,9 +331,13 @@ export default {
     cursor: pointer;
 }
 
+.profile-follow-info button{
+    margin-right: 0;
+    margin-bottom: 1.5ch;
+}
+
 .profile-arroba{
     color: lightgray;
-    margin-bottom: 1ch;
 }
 
 .profile-posts{

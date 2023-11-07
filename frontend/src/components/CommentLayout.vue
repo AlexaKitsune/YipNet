@@ -223,8 +223,15 @@ export default {
                     this.inputText = "";
                     this.$refs.commentTextarea.value = "";
                     this.$refs.commentTextarea.style.height = "fit-content";
-                    this.clearMedia();   
-                    console.log("DATA created:", data.message.comment)
+                    this.clearMedia();
+                    let newComment = data.message.comment;
+                    console.log(newComment);
+                    newComment.comment_id = newComment.id;
+                    newComment.comment_owner_id = newComment.ownerId;
+                    newComment.comment_content = newComment.content;
+                    newComment.user_profile_pic = newComment.currentProfilePic;
+                    newComment.user_name = newComment.name;
+                    newComment.user_surname = newComment.surname;
                     this.commentList.push(data.message.comment);
                 }
             })

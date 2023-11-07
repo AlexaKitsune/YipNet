@@ -235,5 +235,26 @@ def get_comment_list(post_id):
         return jsonify({"status": "error", "message": str(e)})
 
 
+@app.route('/manage_follow/<int:target_id>', methods=['POST'])
+@jwt_required()
+def manage_follow(target_id):
+    try:
+        current_user_email = get_jwt_identity()
+        user_id = query.get_user_data("email", {"email": current_user_email})
+        user_id = user_id["json"]["message"]["id"]
+
+        follow_or_unfollow = request.json.get('followOrUnfollow')
+        if(follow_or_unfollow == 1):
+            action = True
+        else:
+            action = False
+
+        response = query.manage_follow(user_id, target_id, action)
+
+        return jsonify(response["json"])
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
