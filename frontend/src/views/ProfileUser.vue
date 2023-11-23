@@ -15,16 +15,22 @@
         <div class="profile-info">
             <div>
                 <h1>{{ profileData.name  +" "+ profileData.surname }}   </h1>
-                <p class="profile-arroba">@</p>
+                <!--<p class="profile-arroba">@</p>-->
                 <p>
                     <span v-if="description">{{ description }}</span>
                     <span v-else class="no-description">Add description.</span>
                 </p>
             </div>
             <div class="profile-follow-info">
-                <button v-if="myId != targetId" class="BIG-BUTTON MAIN-BUTTON" @click="manageFollow(true)">Follow</button>
-                {{ profileData.externalPositiveList }}
-                {{ profileData.positiveList }}
+                <div v-if="myId != targetId">
+                    <button v-if="!checkIfIncludes(target.externalPositiveList, myId)" class="BIG-BUTTON MAIN-BUTTON" @click="manageFollow(true)">Follow</button>
+                    <button v-if="checkIfIncludes(target.externalPositiveList, myId)" class="BIG-BUTTON MAIN-BUTTON" @click="manageFollow(false)">Unfollow</button>
+                    <button class="BIG-BUTTON MAIN-BUTTON profile-block">Block</button>
+                </div>
+                <div class="follow-info">
+                    <div>Followers &nbsp;<b>{{ target.externalPositiveList?.length }}</b></div>
+                    <div>Following &nbsp;<b>{{ target.positiveList?.length }}</b></div>
+                </div>
             </div>
         </div>
 
@@ -69,7 +75,11 @@ export default {
             imageToUpdate: '',
             imageFileToUpdate: '',
             targetId: 0,
-            myPositiveList: []
+            myPositiveList: [],
+            target:{
+                externalPositiveList: [],
+                positiveList: []
+            }
         }
     },
 
@@ -86,6 +96,8 @@ export default {
                     .then(data => {
                         console.log("selected data:")
                         this.profileData = data.message;
+                        this.target.positiveList = this.profileData.positiveList;
+                        this.target.externalPositiveList = this.profileData.externalPositiveList;
                     })
                     .catch(error => {
                         console.error("Error: ", error);
@@ -193,7 +205,23 @@ export default {
             .then(response => response.json())
             .then(data => {
                 console.log(data);
+                if(data.status == "ok"){
+                    if(followOrUnfollow_){
+                        if (!this.target.externalPositiveList.includes(this.myId)) {
+                            this.target.externalPositiveList.push(this.myId);
+                        }
+                    }else{
+                        const index = this.target.externalPositiveList.indexOf(this.myId);
+                        if (index !== -1) {
+                            this.target.externalPositiveList.splice(index, 1);
+                        }
+                    }
+                }
             })
+        },
+
+        checkIfIncludes(arr_, element_){
+            return arr_.includes(element_)
         }
 
     },
@@ -334,6 +362,33 @@ export default {
 .profile-follow-info button{
     margin-right: 0;
     margin-bottom: 1.5ch;
+}
+
+.profile-follow-info div:not(.follow-info){
+    display: flex !important;
+    flex-direction: row !important;
+    white-space: nowrap;
+    color: rgb(182, 182, 182);
+    width: 100%;
+}
+
+.follow-info{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.follow-info > div{
+    width: fit-content !important;
+}
+
+.profile-block{
+    color: orange;
+}
+
+.profile-block:hover{
+    background-color: red;
+    color:  white;
 }
 
 .profile-arroba{
@@ -494,6 +549,34 @@ export default {
     .update-pic-profile{
         width: 60vw;
         height: 60vw;
+    }
+
+    .profile-info{
+        flex-direction: column;
+    }
+
+    .profile-follow-info{
+        width: 100% !important;
+        max-width: unset;
+        display: flex;
+        align-items: center !important;
+        justify-content: space-between;
+        flex-direction: row-reverse !important;
+        margin-top: 2.2ch;
+    }
+
+    .profile-follow-info div:not(.follow-info){
+        width: fit-content;
+        align-self: unset;
+        display: flex;
+    }
+
+    .follow-info{
+        align-items: flex-start;
+    }
+
+    .profile-follow-info button{
+        margin-bottom: 0;
     }
 
 }

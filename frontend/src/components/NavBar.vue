@@ -1,7 +1,7 @@
 <template>
     <nav>
 
-        <div>*</div>
+        <div>YipNet</div>
         <div></div>
         <div v-if="userData.id">
             <div v-if="userData.id" class="nav-pic" @click="toProfile(userData.id)">
