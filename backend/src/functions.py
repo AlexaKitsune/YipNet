@@ -25,17 +25,18 @@ def validateString(type_, string_):
 
 
 def json_status(success_, status_, message_):
-    if(status_ == 1):
+    if status_ == 1:
         status_ = "ok"
-    if(status_ == 0):
+    elif status_ == 0:
         status_ = "error"
     return {
-            "success" :success_,
-            "json": {
-                "status": status_,
-                "message": message_
-            }
+        "success": success_,
+        "json": {
+            "status": status_,
+            "message": message_
         }
+    }
+
 
 
 def create_folder(id_, get_=False):

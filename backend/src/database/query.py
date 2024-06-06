@@ -145,8 +145,11 @@ def login(data_):
     
 
 def get_user_data(get_by, data_):
+    print(">>>", get_by, ">>>", data_)
     if(get_by == "email"):
         data_ = data_["email"]
+
+    print(">>>", get_by, ">>>", data_)
 
     try:
         connection = mysql.connector.connect(
@@ -204,8 +207,9 @@ def create_post(owner_id, data_):
 
     privatePost = data_["privatePost"]
     nsfwPost = data_["nsfwPost"]
+    shareId = data_["shareId"]
 
-    if("content" not in data_):
+    if "content" not in data_:
         return json_status(True, 0, "Empty content.")
     
     content = data_["content"]
@@ -218,15 +222,32 @@ def create_post(owner_id, data_):
             password=PASS,
             database="yip_net"
         )
-        cursor = connection.cursor()
+        cursor = connection.cursor(dictionary=True)  # Cambiado a cursor de diccionario
+
+        # Verificar y actualizar sharedByList si shareId es diferente de 0
+        if shareId != 0:
+            select_query = "SELECT sharedByList FROM posts WHERE id = %s"
+            cursor.execute(select_query, (shareId,))
+            result = cursor.fetchone()
+
+            if result:
+                shared_by_list = json.loads(result['sharedByList'])
+                if owner_id not in shared_by_list:
+                    shared_by_list.append(owner_id)
+                    update_query = "UPDATE posts SET sharedByList = %s WHERE id = %s"
+                    cursor.execute(update_query, (json.dumps(shared_by_list), shareId))
+                    connection.commit()
+
+        # Insertar el nuevo post
         insert_query = """
-            INSERT INTO posts (ownerId, postDate, content, media, privatePost, nsfwPost)
-            VALUES (%s, NOW(), %s, %s, %s, %s)
+            INSERT INTO posts (ownerId, postDate, content, media, privatePost, nsfwPost, shareId)
+            VALUES (%s, NOW(), %s, %s, %s, %s, %s)
         """
-        values = (owner_id, content, media, privatePost, nsfwPost)
+        values = (owner_id, content, media, privatePost, nsfwPost, shareId)
         cursor.execute(insert_query, values)
         connection.commit()
         post_id = cursor.lastrowid
+
         cursor.close()
         connection.close()
 
@@ -265,6 +286,24 @@ def list_posts(target_owner_id, my_id):
             """
         cursor.execute(query, (target_owner_id,))
         result = cursor.fetchall()
+
+        # Convertir los campos potencialmente problemáticos a tipos JSON serializables
+        for row in result:
+            if 'content' in row and isinstance(row['content'], bytes):
+                row['content'] = row['content'].decode('utf-8')
+            if 'media' in row and isinstance(row['media'], bytes):
+                row['media'] = row['media'].decode('utf-8')
+            if 'sharedByList' in row and isinstance(row['sharedByList'], bytes):
+                row['sharedByList'] = row['sharedByList'].decode('utf-8')
+            if 'postDate' in row and isinstance(row['postDate'], datetime.datetime):
+                row['postDate'] = row['postDate'].isoformat()
+
+            if 'voteHeart' in row and isinstance(row['voteHeart'], bytes):
+                row['voteHeart'] = row['voteHeart'].decode('utf-8')
+            if 'voteUp' in row and isinstance(row['voteUp'], bytes):
+                row['voteUp'] = row['voteUp'].decode('utf-8')
+            if 'voteDown' in row and isinstance(row['voteDown'], bytes):
+                row['voteDown'] = row['voteDown'].decode('utf-8')
 
         cursor.close()
         connection.close()
@@ -307,16 +346,22 @@ def get_single_post(id_):
             post = {
                 'id': post_data[0],
                 'ownerId': post_data[1],
-                'postDate': post_data[2],
-                'content': post_data[3],
-                'media': post_data[4],
-                'apiOrigin': post_data[5],
-                'privatePost': post_data[6],
-                'nsfwPost': post_data[7],
-                'origin': post_data[8],
-                'name': post_data[9],
-                'surname': post_data[10],
-                'currentProfilePic': post_data[11]
+                'postDate': post_data[2].isoformat() if isinstance(post_data[2], datetime.datetime) else post_data[2],
+                'content': post_data[3].decode('utf-8') if isinstance(post_data[3], bytes) else post_data[3],
+                'sharedByList': post_data[4].decode('utf-8') if isinstance(post_data[4], bytes) else post_data[4],
+                'shareId': post_data[5],
+                'media': post_data[6].decode('utf-8') if isinstance(post_data[6], bytes) else post_data[6],
+                'apiOrigin': post_data[7],
+                'privatePost': post_data[8],
+                'nsfwPost': post_data[9],
+                'commentCount': post_data[10],
+                #'origin': post_data[11],
+                'voteHeart': post_data[12].decode('utf-8') if isinstance(post_data[12], bytes) else post_data[12],
+                'voteUp': post_data[13].decode('utf-8') if isinstance(post_data[13], bytes) else post_data[13],
+                'voteDown': post_data[14].decode('utf-8') if isinstance(post_data[14], bytes) else post_data[14],
+                'name': post_data[15],
+                'surname': post_data[16],
+                'currentProfilePic': post_data[17]
             }
             return json_status(True, 1, post)
         else:
@@ -636,6 +681,144 @@ def manage_follow(my_id, target_id, add_):
                 cursor.execute(update_query1, (positiveList, my_id))
                 update_query2 = "UPDATE users SET externalPositiveList = %s WHERE id = %s"
                 cursor.execute(update_query2, (externalPositiveList, target_id))
+
+        connection.commit()
+        cursor.close()
+        connection.close()
+        return json_status(True, 1, {"response": response_text, "target_user": target_id})
+
+    except mysql.connector.Error as error:
+        print(f"Error al conectarse a la base de datos: {error}")
+        return json_status(False, 0, "Database connection error.")
+    
+
+def get_follow_list(target_id):
+    try:
+        connection = mysql.connector.connect(
+            host=HOST,
+            user=USER,
+            password=PASS,
+            database="yip_net"
+        )
+        cursor = connection.cursor(dictionary=True)
+
+        target_id = int(target_id)
+        
+        # Obtener los campos positiveList y externalPositiveList
+        cursor.execute("SELECT positiveList, externalPositiveList FROM users WHERE id = %s", (target_id,))
+        result = cursor.fetchone()
+
+        if result is None:
+            return json_status(False, 1, "User not found.")
+
+        positive_list = json.loads(result['positiveList'])
+        external_positive_list = json.loads(result['externalPositiveList'])
+
+        # Crear arrays de objetos
+        def get_user_info(user_ids):
+            if not user_ids:
+                return []
+            format_strings = ','.join(['%s'] * len(user_ids))
+            cursor.execute(f"""
+                SELECT id, name, surname, currentProfilePic, externalPositiveList, positiveList 
+                FROM users 
+                WHERE id IN ({format_strings})
+            """, tuple(user_ids))
+            users = cursor.fetchall()
+            user_info_list = []
+            for user in users:
+                external_positive_list = user["externalPositiveList"]
+                positive_list = user["positiveList"]
+                if isinstance(external_positive_list, bytes):
+                    external_positive_list = external_positive_list.decode()  # Decodifica bytes a cadena
+                if isinstance(positive_list, bytes):
+                    positive_list = positive_list.decode()  # Decodifica bytes a cadena
+                user_info_list.append({
+                    "id": user["id"],
+                    "name": user["name"],
+                    "surname": user["surname"],
+                    "pfp": user["currentProfilePic"],
+                    "externalPositiveList": external_positive_list,
+                    "positiveList": positive_list
+                })
+            return user_info_list
+
+        positive_list_objects = get_user_info(positive_list)
+        external_positive_list_objects = get_user_info(external_positive_list)
+
+        data = {
+            "positiveList": positive_list_objects,
+            "externalPositiveList": external_positive_list_objects
+        }
+
+        return json_status(True, 1, {"response": data})
+
+    except mysql.connector.Error as error:
+        print(f"Error al conectarse a la base de datos: {error}")
+        return json_status(False, 0, "Database connection error.")
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+    
+def manage_block(my_id, target_id, add_):
+    try:
+        connection = mysql.connector.connect(
+            host=HOST,
+            user=USER,
+            password=PASS,
+            database="yip_net"
+        )
+        cursor = connection.cursor()
+
+        my_id = int(my_id)
+        target_id = int(target_id)
+
+        print("IDS", my_id, target_id, add_)
+
+        if add_:
+            response_text = "Blocked"
+            # Agregar el 'id' del usuario objetivo a mi 'negativeList', si no existe.
+            update_query1 = """
+                UPDATE users
+                SET negativeList = JSON_ARRAY_APPEND(negativeList, '$', %s)
+                WHERE id = %s
+                AND NOT JSON_CONTAINS(negativeList, %s)
+            """
+            cursor.execute(update_query1, (target_id, my_id, target_id))
+            # Agregar mi 'id' al 'externalNegativeList' del usuario objetivo, si no existe.
+            update_query2 = """
+                UPDATE users
+                SET externalNegativeList = JSON_ARRAY_APPEND(externalNegativeList, '$', %s)
+                WHERE id = %s
+                AND NOT JSON_CONTAINS(externalNegativeList, %s)
+            """
+            cursor.execute(update_query2, (my_id, target_id, my_id))
+        else:
+            response_text = "Unblocked"
+            # Eliminar "target_id" del array del campo "negativeList" donde el id = my_id.
+            # Eliminar "my_id" del array del campo "externalNegativeList" donde el id = target_id.
+            select_query_negativeList = "SELECT negativeList FROM users WHERE id = %s"
+            cursor.execute(select_query_negativeList, (my_id,))
+            negativeList = cursor.fetchone()
+            negativeList = json.loads(negativeList[0].decode('utf-8'))
+            select_query_externalNegativeList = "SELECT externalNegativeList FROM users WHERE id = %s"
+            cursor.execute(select_query_externalNegativeList, (target_id,))
+            externalNegativeList = cursor.fetchone()
+            externalNegativeList = json.loads(externalNegativeList[0].decode('utf-8'))
+
+            if target_id in negativeList and my_id in externalNegativeList:
+                negativeList.remove(target_id)
+                externalNegativeList.remove(my_id)
+
+                negativeList = json.dumps(negativeList)
+                externalNegativeList = json.dumps(externalNegativeList)
+
+                update_query1 = "UPDATE users SET negativeList = %s WHERE id = %s"
+                cursor.execute(update_query1, (negativeList, my_id))
+                update_query2 = "UPDATE users SET externalNegativeList = %s WHERE id = %s"
+                cursor.execute(update_query2, (externalNegativeList, target_id))
 
         connection.commit()
         cursor.close()

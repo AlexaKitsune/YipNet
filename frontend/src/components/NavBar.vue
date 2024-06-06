@@ -4,8 +4,12 @@
         <div>YipNet</div>
         <div></div>
         <div v-if="userData.id">
-            <div v-if="userData.id" class="nav-pic" @click="toProfile(userData.id)">
-                <div :style="`background-image:url('${this.$ENDPOINT}/static/users/${userData.id}/${userData.currentProfilePic}');`" class="updater-profile-pic"></div>
+            <div v-if="userData.id" :class="`nav-pic ${userData.currentProfilePic == '' || userData.currentProfilePic == null || userData.currentProfilePic == undefined || userData.currentProfilePic.length == 0 ? 'profile-pic-undefined' : ''}`" @click="toProfile(userData.id)">
+                <img
+                    :src="`${this.$ENDPOINT}/static/users/${userData.id}/${userData.currentProfilePic}`"
+                    alt=""
+                    :class="`updater-profile-pic `"
+                >
             </div>
             <button @click="reload()"><a href="#/settings">⚙️</a></button>
         </div>
@@ -67,11 +71,24 @@ nav > div{
     background-size: cover;
     background-position: center;
     cursor: pointer;
-    background-image: url('../assets/images/default-user.jpg');
+    background-color: rgb(32, 33, 36);
 }
 
-.nav-pic > div{
+.nav-pic > img{
     position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 100vw;
+    object-fit: cover;
+    object-position: center;
+}
+
+.profile-pic-undefined{
+    background-image: url('../assets/images/default-user.jpg') !important;
+}
+
+.profile-pic-undefined img{
+    display: none;
 }
 
 nav button{

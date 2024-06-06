@@ -45,11 +45,16 @@ def create_database_and_tables():
             ownerId BIGINT(20) NOT NULL,
             postDate DATETIME NOT NULL,
             content MEDIUMTEXT NOT NULL,
+            sharedByList JSON DEFAULT '[]',
+            shareId BIGINT(20) DEFAULT 0,
             media MEDIUMTEXT,
             apiOrigin VARCHAR(255),
             privatePost TINYINT(1) NOT NULL,
             nsfwPost TINYINT(1) NOT NULL,
             commentCount BIGINT(20) DEFAULT 0,
+            voteHeart JSON DEFAULT '[]',
+            voteUp JSON DEFAULT '[]',
+            voteDown JSON DEFAULT '[]',
             origin VARCHAR(255)
         );
         """
@@ -62,6 +67,9 @@ def create_database_and_tables():
             content MEDIUMTEXT NOT NULL,
             media MEDIUMTEXT,
             commentDate DATETIME NOT NULL,
+            voteHeart JSON DEFAULT '[]',
+            voteUp JSON DEFAULT '[]',
+            voteDown JSON DEFAULT '[]',
             origin VARCHAR(255)
         );
         """
@@ -90,22 +98,10 @@ def create_database_and_tables():
         );
         """
 
-        create_votes_table_query = """
-        CREATE TABLE IF NOT EXISTS votes (
-            elementId BIGINT(20) NOT NULL,
-            elementType VARCHAR(63) NOT NULL,
-            voterId BIGINT(20) NOT NULL,
-            voteHeart TINYINT(1),
-            voteUp TINYINT(1),
-            voteDown TINYINT(1)
-        );
-        """
-
         # Ejecuta las consultas para crear las tablas
         cursor.execute(create_posts_table_query)
         cursor.execute(create_comments_table_query)
         cursor.execute(create_users_table_query)
-        cursor.execute(create_votes_table_query)
 
         # Confirma la transacción
         connection.commit()

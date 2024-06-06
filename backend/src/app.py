@@ -5,11 +5,11 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 from werkzeug.utils import secure_filename
 from database.creation import create_database_and_tables
 import database.query as query
-from example_data import get_example
+#from example_data import get_example
 import os
 import functions
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 app = Flask(__name__)
@@ -19,9 +19,9 @@ jwt = JWTManager(app)
 create_database_and_tables()
 
 
-@app.route('/posts', methods=['GET'])
-def obtener_json(): 
-    return jsonify(get_example("post"))
+#@app.route('/posts', methods=['GET'])
+#def obtener_json(): 
+#    return jsonify(get_example("post"))
 
 
 @app.route('/login', methods=['POST'])
@@ -31,7 +31,8 @@ def login_user():
     response = query.login(data)
 
     if(response["json"]["status"] == "ok"):
-        access_token = create_access_token(identity=user_email)
+        expires = timedelta(hours=24)
+        access_token = create_access_token(identity=user_email, expires_delta=expires)
         user_data = query.get_user_data("email", data)
         user_data = user_data["json"]["message"]
         print("DATA TO SEND")
@@ -71,7 +72,8 @@ def publish_post():
                 "content": request.form.get('content'),
                 "media": "",
                 "nsfwPost": request.form.get('nsfwPost'),
-                "privatePost": request.form.get('privatePost')
+                "privatePost": request.form.get('privatePost'),
+                "shareId": request.form.get('shareId')
             }
 
         if 'media' in request.files: # Se están enviando archivos
@@ -101,7 +103,12 @@ def get_post_list(target_id):
         user_id = user_id["json"]["message"]["id"]
 
         response = query.list_posts(target_id, user_id)
-        return jsonify(response["json"])
+        
+        if response["json"]["status"] == "ok":
+            return jsonify(response["json"])
+        else:
+            return jsonify({"status": "error", "message": response["json"]["message"]})
+
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
@@ -115,7 +122,10 @@ def single_post(target_id):
         user_id = user_id["json"]["message"]["id"]
 
         response = query.get_single_post(target_id)
+        
+        # Asegurarse de que response["json"]["message"] sea JSON serializable
         return jsonify(response["json"])
+        
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
@@ -240,17 +250,51 @@ def get_comment_list(post_id):
 def manage_follow(target_id):
     try:
         current_user_email = get_jwt_identity()
-        user_id = query.get_user_data("email", {"email": current_user_email})
-        user_id = user_id["json"]["message"]["id"]
+        user_data = query.get_user_data("email", {"email": current_user_email})
+        user_id = user_data["json"]["message"]["id"]
+
+        # Verificar si target_id es igual a user_id
+        if target_id == user_id:
+            return jsonify({"status": "error", "message": "You can't follow or unfollow yourself."})
 
         follow_or_unfollow = request.json.get('followOrUnfollow')
-        if(follow_or_unfollow == 1):
-            action = True
-        else:
-            action = False
+        action = True if follow_or_unfollow == 1 else False
 
         response = query.manage_follow(user_id, target_id, action)
 
+        return jsonify(response["json"])
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+    
+
+@app.route('/manage_block/<int:target_id>', methods=['POST'])
+@jwt_required()
+def manage_block(target_id):
+    try:
+        current_user_email = get_jwt_identity()
+        user_data = query.get_user_data("email", {"email": current_user_email})
+        user_id = user_data["json"]["message"]["id"]
+
+        # Verificar si target_id es igual a user_id
+        if target_id == user_id:
+            return jsonify({"status": "error", "message": "You can't block or unblock yourself."})
+
+        block_or_unblock = request.json.get('blockOrUnblock')
+        action = True if block_or_unblock == 1 else False
+
+        response = query.manage_block(user_id, target_id, action)
+
+        return jsonify(response["json"])
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+
+
+
+@app.route('/follow_list/<int:target_id>', methods=['GET'])
+def follow_list(target_id):
+    try:
+        response = query.get_follow_list(target_id)
         return jsonify(response["json"])
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})

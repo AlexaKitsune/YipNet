@@ -161,6 +161,7 @@ export default {
             formData.append("content", content);
             formData.append("privatePost", isPrivate);
             formData.append("nsfwPost", isNSFW);
+            formData.append("shareId", 0);
 
             // Itera sobre los archivos seleccionados y agrégalos al formData
             for (let i = 0; i < mediaFiles.length; i++) {

@@ -4,7 +4,7 @@
         <div class="comments-bar">
             <div><button>▲</button> {{ votes }} <button>▼</button></div>
             <div><button>❤</button> {{ hearts }}</div>
-            <div><button>⤷</button> {{ shares }}</div>
+            <div><button @click="shareWindow = true" ref="shareBtn">⤷</button> {{ shares }}</div>
             <div class="comment-btn-post activated-btn-post" @click="toCommentBox()">Comment</div>
         </div>
 
@@ -13,12 +13,12 @@
             <button @click="getComments()" class="load-comments-btn MAIN-BUTTON">See {{ numOfComments }} comments</button>
             <!-- Un v-for con toda la carga de comentarios. Lo siguiente es solo de ejemplo. -->
             <div v-for="(comment, index) in commentList" :key="index" class="comment-user-info">
-                <div class="comment-userimg"
+                <div class="comment-userimg" v-if="!myBlockedList.includes(comment.comment_owner_id)"
                     :style="`background-image:url('${
                         this.$ENDPOINT + '/static/users/' + comment.comment_owner_id +'/'+ comment.user_profile_pic || require('../assets/images/default-user.jpg')
                     }');`
                 "></div>
-                <div class="comment-contents">
+                <div class="comment-contents" v-if="!myBlockedList.includes(comment.comment_owner_id)">
                     <div class="comment-panel">
                         <span v-if="parseInt(myId) == parseInt(comment.comment_owner_id)" class="del-comment">🗑️</span>
                         <span v-else>🚨</span>
@@ -70,6 +70,30 @@
             </div>
         </div>
 
+        <section class="share-post" v-if="shareWindow">
+            <div>
+                <button @click="shareWindow = false, shareContent = '',sharePreviewTxt = false">+</button>
+                <h2>Share</h2>
+                <textarea ref="shareContent" placeholder="Write a comment..." v-model="shareContent" oninput="this.style.height = ''; this.style.height = this.scrollHeight +'px'"></textarea>
+                <br>
+                <MarkdownRenderer :postId="'share-preview'" :text="shareContent" v-if="sharePreviewTxt" class="shareContentRenderer"/>
+                <div>
+                    <button class="postShare-btn-preview">
+                        <label class="switch">
+                            <input type="checkbox" v-model="sharePreviewTxt"/>
+                            <span class="slider"></span>
+                            <div class="switch-bg"></div>
+                        </label>
+                        &nbsp; Preview
+                    </button>
+                    <div>
+                        <button class="MAIN-BUTTON" @click="share()">Share</button>
+                        <button class="MAIN-BUTTON cancel-btn" @click="shareWindow = false, shareContent = '',sharePreviewTxt = false">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </section>
 </template>
 
@@ -81,7 +105,9 @@ export default {
     name: 'CommentLayout',
     props: {
         postId: String,
-        numOfComments: Number
+        shareId: Number,
+        numOfComments: Number,
+        sharedByList: [String, Array],
     },
     data() {
         return {
@@ -92,7 +118,12 @@ export default {
             preview: false,
             selectedFiles: [],
             commentList: [],
-            myId: JSON.parse(localStorage.getItem("yipUserData")).userData.id
+            myId: JSON.parse(localStorage.getItem("yipUserData")).userData.id,
+            myBlockedList: JSON.parse(localStorage.getItem("yipUserData")).userData.negativeList,
+            shareIdData: 0,
+            shareWindow: false,
+            shareContent: "",
+            sharePreviewTxt: false,
         };
     },
     methods: {
@@ -158,6 +189,7 @@ export default {
                 .then(data => {
                     if(data.status == "ok"){
                         this.commentList = data.message.comment_list;
+                        console.log(this.commentList)
                     }
                 })
                 .catch(error => {
@@ -239,6 +271,42 @@ export default {
                 console.error('Error:', error);
             });
         },
+
+        share(){
+            const formData = new FormData();
+            formData.append("content", this.shareContent);
+            formData.append("privatePost", 0);
+            formData.append("nsfwPost", 0);
+            formData.append("shareId", parseInt(this.postId));
+
+            const token = JSON.parse(localStorage.getItem("yipUserData")).token;
+            fetch(this.$ENDPOINT + "/post", {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}` // Incluye el token JWT en el encabezado
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Respuesta del servidor:', data);
+                if(data.status == "ok"){
+                    console.log("shared");
+                    this.shareWindow = false;
+                    this.shareContent = '';
+                    this.sharePreviewTxt = false;
+                    this.$refs.shareBtn.class = "already-shared";  
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+    },
+    mounted(){
+        if(this.shareId != 0){
+            this.shareIdData = this.shareId;
+        }
     },
     components: { MarkdownRenderer, MediaDisplayer }
 }
@@ -271,6 +339,17 @@ section
     color: gray;
 }
 
+.comments-bar button:hover{
+    cursor: pointer;
+    color: white;
+    text-shadow: 0 0 1ch white;
+}
+
+.already-shared{
+    color: rgb(54, 255, 47);
+    pointer-events: none;
+}
+
 .comments-bar > div a{
     text-decoration: none;
     font-family: sans-serif;
@@ -293,7 +372,7 @@ section
   display: flex;
   position: relative;
   font-family: sans-serif;
-  margin: 2ch 0;
+  margin: 0;
 }
 
 .comment-panel{
@@ -323,12 +402,14 @@ section
 }
 
 .comment-userimg{
-  width: 5ch !important;
-  height: 5ch !important;
-  aspect-ratio: 1 / 1;
-  border-radius: 100vw;
+  width: 4.4ch !important;
+  height: 4.2ch !important;
+  aspect-ratio: 1/1 !important;
+  border-radius: 100vw !important;
   background-size: cover;
   margin-right: 1.4ch;
+  margin-top: 1.2ch;
+  background-position: center;
 }
 
 .comment-user-info p{
@@ -364,6 +445,7 @@ section
     border-radius: 2ch;
     width: calc(100% - 4ch);
     background-color: rgb(52, 53, 56);
+    margin-top: 2ch;
 }
 
 /* previewer */
@@ -507,6 +589,109 @@ section
     margin-left: 1%;
 }
 
+.share-post{
+    width: 100% !important;
+    padding: 0;
+    height: calc(100vh - 6ch);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    overflow: auto;
+    top: 6ch;
+    left: 0;
+    background-color: rgba(0, 0, 0, 0.75);
+    z-index: 2;
+    transition: opacity 0.3s;
+}
+
+.share-post > div{
+    width: fit-content;
+    height: fit-content;
+    display: flex;
+    flex-direction: column;
+    padding: 2ch;
+    border-radius: 2ch;
+    background-color: rgb(52, 53, 56);
+    box-shadow: 0ch 0ch 2ch rgba(0, 0, 0, 0.5);
+    position: relative;
+    width: 80vw;
+    max-width: calc(512px + 2ch);
+    min-height: fit-content;
+    max-height: 88vh;
+    overflow: auto;
+}
+
+.share-post > div > button{
+    font-weight: bolder;
+    width: 1ch;
+    height: 1ch;
+    font-size: 3ch;
+    transform: rotate(45deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background-color: transparent;
+    border: none;
+    color: gray;
+    transition: all 0.1s;
+    position: absolute;
+    right: 1ch;
+    cursor: pointer;
+}
+
+.share-post textarea{
+    resize: vertical;
+    border: none;
+    background-color: rgba(0, 0, 0, 0.2);
+    color: white;
+    padding: 1ch;
+    width: calc(100% - 2ch);
+    border-radius: 1ch;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(145, 145, 145) rgb(50,50,50);
+}
+
+.postShare-btn-preview{
+    background-color: transparent;
+    color: gray;
+    position: relative;
+    padding: 0.5ch 1ch;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 0.3ch;
+}
+
+label{
+    cursor: pointer;
+}
+
+.share-post > div > div{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 1ch;
+}
+
+.shareContentRenderer{
+    margin: 1ch 0;
+}
+
+.share-post button:not(.postShare-btn-preview){
+    margin-left: 2ch;
+}
+
+.cancel-btn{
+    color: white;
+}
+
+.cancel-btn:hover{
+    background-color: #686A70;
+}
+
 /********************************************************************
 * RESPONSIVE
 ********************************************************************/
@@ -518,6 +703,11 @@ section
 
     .load-comments-btn{
         margin-left: 0;
+    }
+
+    .share-post > div{
+        width: 85vw;
+        max-width: unset;
     }
 
 }

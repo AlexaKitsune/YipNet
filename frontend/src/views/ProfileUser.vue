@@ -7,7 +7,10 @@
                 <button class="profile-change-cover" v-if="profileData.id == myId" @click="updatePics(true, 'cover')">📷</button>
             </div>
             <div class="profile-pic">
-                <div :style="`background-image:url('${this.$ENDPOINT}/static/users/${profileData.id}/${profileData.currentProfilePic}');`" class="profile-pic sub-profile-pic updater-profile-pic"></div>
+                <img
+                    :src="`${this.$ENDPOINT}/static/users/${profileData.id}/${profileData.currentProfilePic}`"
+                    :class="`profile-pic sub-profile-pic updater-profile-pic ${profileData.currentProfilePic == '' || profileData.currentProfilePic == null || profileData.currentProfilePic == undefined || profileData.currentProfilePic.length == 0 ? 'profile-pic-undefined' : ''}`"
+                >
                 <button class="profile-change-pic" v-if="profileData.id == myId" @click="updatePics(true, 'profile')">📷</button>
             </div><!--Imagen de perfil-->
         </div>
@@ -25,18 +28,14 @@
                 <div v-if="myId != targetId">
                     <button v-if="!checkIfIncludes(target.externalPositiveList, myId)" class="BIG-BUTTON MAIN-BUTTON" @click="manageFollow(true)">Follow</button>
                     <button v-if="checkIfIncludes(target.externalPositiveList, myId)" class="BIG-BUTTON MAIN-BUTTON" @click="manageFollow(false)">Unfollow</button>
-                    <button class="BIG-BUTTON MAIN-BUTTON profile-block">Block</button>
+                    <button class="BIG-BUTTON MAIN-BUTTON profile-block" @click="blockAlert = true">Block</button>
                 </div>
-                <div class="follow-info">
-                    <div>Followers &nbsp;<b>{{ target.externalPositiveList?.length }}</b></div>
-                    <div>Following &nbsp;<b>{{ target.positiveList?.length }}</b></div>
+                <div class="follow-info" @click="showFollowList = true">
+                    <div><b>{{ target.externalPositiveList?.length }}</b> &nbsp; Followers</div>
+                    <div><b>{{ target.positiveList?.length }}</b> &nbsp; Following</div>
                 </div>
             </div>
         </div>
-
-        <section class="profile-posts">
-            <PostViewer v-for="post in postList" :key="post.id" :postData="post" />
-        </section>
 
         <section class="update-pics" ref="updatePics">
             <div>
@@ -57,16 +56,42 @@
                 </div>
             </div>
         </section>
+
+        <FollowList v-if="showFollowList" :targetId="targetId"/>
+
+        <section class="block-section" v-if="blockAlert">
+            <div>
+                <button @click="blockAlert = false">+</button>
+                <div class="profile-pic block-pic">
+                    <img
+                        :src="`${this.$ENDPOINT}/static/users/${profileData.id}/${profileData.currentProfilePic}`"
+                        :class="`profile-pic sub-profile-pic updater-profile-pic ${profileData.currentProfilePic == '' || profileData.currentProfilePic == null || profileData.currentProfilePic == undefined || profileData.currentProfilePic.length == 0 ? 'profile-pic-undefined' : ''}`"
+                    >
+                    <button class="profile-change-pic" v-if="profileData.id == myId" @click="updatePics(true, 'profile')">📷</button>
+                </div>
+                <h1>Are you sure you want to block {{ profileData.name }}?</h1>
+                <div>
+                    <button class="BIG-BUTTON MAIN-BUTTON profile-block" @click="manageBlock()">Block</button>
+                    <button class="BIG-BUTTON MAIN-BUTTON" @click="blockAlert = false">Cancel</button>
+                </div>
+            </div>
+
+        </section>
         
+        <section class="profile-posts">
+            <PostViewer v-for="post in postList" :key="post.id" :postData="post"/>
+        </section>
+
     </main>
 </template>
 
 <script>
 import PostViewer from '@/components/PostViewer.vue';
+import FollowList from '@/components/FollowList.vue';
 
 export default {
     name: 'ProfileUser',
-    components: { PostViewer },
+    components: { PostViewer, FollowList },
     data(){
         return{
             profileData: Object,
@@ -79,7 +104,9 @@ export default {
             target:{
                 externalPositiveList: [],
                 positiveList: []
-            }
+            },
+            showFollowList: false,
+            blockAlert: false,
         }
     },
 
@@ -88,7 +115,11 @@ export default {
             let userId = window.location.href.split("~")[1];
             userId = parseInt(userId);
             this.targetId = userId;
-            console.log(userId)
+            const blockedList = JSON.parse(localStorage.getItem("yipUserData")).userData.negativeList;
+            if(blockedList.includes(this.targetId)){
+                window.location.hash = "/NotFound";
+                return;
+            }
 
             if(!isNaN(userId)){
                 fetch(this.$ENDPOINT+"/profile/" + userId)
@@ -222,8 +253,43 @@ export default {
 
         checkIfIncludes(arr_, element_){
             return arr_.includes(element_)
-        }
+        },
 
+        viewFollowers(mode_){
+            this.showFollowList = mode_;
+            console.log(this.showFollowList)
+        },
+
+        manageBlock(){
+            const token = JSON.parse(localStorage.getItem("yipUserData")).token;
+            fetch(this.$ENDPOINT+"/manage_block/" + this.targetId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` // Incluye el token JWT en el encabezado
+                },
+                body: JSON.stringify({
+                    "blockOrUnblock": 1
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                if(data.status == "ok"){
+                    let yipUserData = JSON.parse(localStorage.getItem("yipUserData"));
+                    console.log("blocked", data.message.target_user);
+
+                    if(!yipUserData.userData.negativeList.includes(data.message.target_user)){
+                        yipUserData.userData.negativeList.push(data.message.target_user);
+                    }
+
+                    localStorage.setItem("yipUserData", JSON.stringify(yipUserData));
+
+                    window.location.hash = "/newsfeed";
+                    window.location.reload();
+                }
+            })
+        },
     },
 
     beforeCreate(){
@@ -280,21 +346,27 @@ export default {
     position: absolute;
 }
 
-.profile-pic, .profile-pic > div{
+.profile-pic, .profile-pic > img{
     position: absolute;
     width: 20vh;
     height: 20vh;
     border-radius: 100vw;
     background-size: cover;
     background-position: center;
-    background-image: url('../assets/images/default-user.jpg');
     border: 5px solid rgb(32, 33, 36);
     display: flex;
     align-items: flex-end;
     justify-content: center;
+    object-fit: cover;
+    object-position: center;
+    background-color: rgb(32, 33, 36);
 }
 
-.profile-pic > div{
+.profile-pic-undefined{
+    background-image: url('../assets/images/default-user.jpg') !important;
+}
+
+.profile-pic > img{
     width: inherit;
     height: inherit;
     border: none;
@@ -382,6 +454,11 @@ export default {
     width: fit-content !important;
 }
 
+.follow-info:hover, .follow-info:hover *{
+    cursor: pointer;
+    color: rgb(222, 222, 222) !important;
+}
+
 .profile-block{
     color: orange;
 }
@@ -417,7 +494,7 @@ export default {
     border-radius: 1ch;
 }
 
-.update-pics{
+.update-pics, .block-section{
     width: 100%;
     height: calc(100vh - 6ch);
     display: flex;
@@ -430,11 +507,15 @@ export default {
     background-color: rgba(0, 0, 0, 0.75);
 }
 
+.block-section{
+    display: flex;
+}
+
 .update-pics p{
     margin-bottom: 3ch;
 }
 
-.update-pics > div{
+.update-pics > div, .block-section > div{
     width: fit-content;
     height: fit-content;
     display: flex;
@@ -446,7 +527,17 @@ export default {
     position: relative;
 }
 
-.update-pics > div > button{
+.block-section{
+    z-index: 2;
+}
+
+.block-section > div{
+    align-items: center;
+    max-width: 80%;
+    margin-top: -3ch;
+}
+
+.update-pics > div > button, .block-section > div > button{
     font-weight: bolder;
     width: 1ch;
     height: 1ch;
@@ -462,6 +553,11 @@ export default {
     transition: all 0.1s;
     position: absolute;
     right: 1ch;
+}
+
+.update-pics > div > button:hover, .block-section > div > button:hover{
+    cursor: pointer;
+    scale: 1.1;
 }
 
 .update-pics > div > button:hover{
@@ -520,6 +616,23 @@ export default {
     border-radius: 0.5ch;
 }
 
+.block-pic{
+    position: relative;
+    top: unset;
+    left: unset;
+    right: unset;
+    bottom: unset;
+    margin: unset;
+    width: 10ch !important;
+    height: 10ch !important;
+}
+
+.block-section > div > div{
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+}
 /********************************************************************
 * RESPONSIVE
 ********************************************************************/
