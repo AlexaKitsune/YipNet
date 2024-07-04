@@ -75,7 +75,8 @@ export default {
             inputText: "",
             preview: false,
             selectedFiles: [],
-            fakeId: new Date().toLocaleString().replaceAll("/","").replaceAll(" ","").replaceAll(",","").replaceAll(":","")
+            fakeId: new Date().toLocaleString().replaceAll("/","").replaceAll(" ","").replaceAll(",","").replaceAll(":",""),
+            myId: JSON.parse(localStorage.getItem("yipUserData")).userData.id,
         };
     },
     methods: {
@@ -184,7 +185,8 @@ export default {
                 if(data.status == "ok"){
                     this.$refs.postCreator_MAIN.style.opacity = 0;
                     setTimeout(() => {
-                        this.switchPostCreator(false);
+                        this.switchPostCreator(false);                        
+                        this.$parent.changeKeyComponent();
                     }, 300);    
                 }
             })

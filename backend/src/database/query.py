@@ -1,6 +1,7 @@
 import mysql.connector, json
 from functions import validateString, json_status, create_folder
 import datetime
+import bcrypt
 
 json_file = "./src/config.json"
 try:
@@ -82,6 +83,9 @@ def add_user(data_):
     externalNegativeList = json.dumps([])
     userSettings = json.dumps({"key": "value"})
 
+    # Encriptar la contraseña usando bcrypt
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+
     try:
         connection = mysql.connector.connect(
             host=HOST,
@@ -94,7 +98,7 @@ def add_user(data_):
             INSERT INTO users (name, surname, birthday, gender, email, password, currentCoverPic, currentProfilePic, registrationDate, positiveList, externalPositiveList, negativeList, externalNegativeList, userSettings)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s, %s, %s, %s, %s)
         """
-        values = (name, surname, birthday, gender, email, password, currentCoverPic, currentProfilePic, positiveList, externalPositiveList, negativeList, externalNegativeList, userSettings)
+        values = (name, surname, birthday, gender, email, hashed_password, currentCoverPic, currentProfilePic, positiveList, externalPositiveList, negativeList, externalNegativeList, userSettings)
         cursor.execute(insert_query, values)
         connection.commit()
         user_id = cursor.lastrowid
@@ -110,7 +114,7 @@ def add_user(data_):
 
 
 def login(data_):
-    if("email" not in data_ or "password" not in data_):
+    if "email" not in data_ or "password" not in data_:
         return json_status(True, 0, "Empty email or password.")
 
     email = data_["email"]
@@ -131,18 +135,18 @@ def login(data_):
         if user_data is None:
             cursor.close()
             connection.close()
-            return json_status(True, 0, "Not exists.")
+            return json_status(True, 0, "User does not exist.")
         
         password_database = user_data[7]
-        if(password_database == password):
+        if bcrypt.checkpw(password.encode('utf-8'), password_database.encode('utf-8')):
             return json_status(True, 1, "Correct login.")
         else:
-            return json_status(True, 0, "Incorrect login.")
+            return json_status(True, 0, "Incorrect email or password.")
 
     except mysql.connector.Error as error:
-        print(f"Error al conectarse a la base de datos: {error}")
+        print(f"Error connecting to the database: {error}")
         return json_status(False, 0, "Database connection error.")
-    
+
 
 def get_user_data(get_by, data_):
     print(">>>", get_by, ">>>", data_)
@@ -356,9 +360,9 @@ def get_single_post(id_):
                 'nsfwPost': post_data[9],
                 'commentCount': post_data[10],
                 #'origin': post_data[11],
-                'voteHeart': post_data[12].decode('utf-8') if isinstance(post_data[12], bytes) else post_data[12],
-                'voteUp': post_data[13].decode('utf-8') if isinstance(post_data[13], bytes) else post_data[13],
-                'voteDown': post_data[14].decode('utf-8') if isinstance(post_data[14], bytes) else post_data[14],
+                'voteHeart': post_data[11].decode('utf-8') if isinstance(post_data[11], bytes) else post_data[11],
+                'voteUp': post_data[12].decode('utf-8') if isinstance(post_data[12], bytes) else post_data[12],
+                'voteDown': post_data[13].decode('utf-8') if isinstance(post_data[13], bytes) else post_data[13],
                 'name': post_data[15],
                 'surname': post_data[16],
                 'currentProfilePic': post_data[17]
@@ -557,7 +561,8 @@ def create_comment(post_id, owner_id, data_, origin):
 
         # Recuperar el comentario insertado
         select_query = """
-            SELECT comments.id, comments.postId, comments.ownerId, comments.content, comments.media, comments.commentDate, users.name, users.surname, users.currentProfilePic
+            SELECT comments.id, comments.postId, comments.ownerId, comments.content, comments.media, comments.commentDate, 
+                   comments.voteHeart, comments.voteUp, comments.voteDown, users.name, users.surname, users.currentProfilePic
             FROM comments
             LEFT JOIN users ON comments.ownerId = users.id
             WHERE comments.id = %s
@@ -567,6 +572,14 @@ def create_comment(post_id, owner_id, data_, origin):
 
         column_names = cursor.column_names  # Obtiene los nombres de las columnas
         inserted_comment = dict(zip(column_names, comment_data))  # Combina los nombres de las columnas con los valores
+
+        # Decodificar los campos JSON desde bytes a cadenas de texto
+        if inserted_comment['voteHeart'] is not None:
+            inserted_comment['voteHeart'] = json.loads(inserted_comment['voteHeart'].decode('utf-8'))
+        if inserted_comment['voteUp'] is not None:
+            inserted_comment['voteUp'] = json.loads(inserted_comment['voteUp'].decode('utf-8'))
+        if inserted_comment['voteDown'] is not None:
+            inserted_comment['voteDown'] = json.loads(inserted_comment['voteDown'].decode('utf-8'))
 
         # Actualización de commentCount en la tabla "posts"
         update_query = """
@@ -599,7 +612,8 @@ def list_comments(post_id, user_id):
 
         query = """
             SELECT c.id AS comment_id, c.postId, c.ownerId AS comment_owner_id, c.content AS comment_content,
-                   c.media AS comment_media, c.commentDate, u.name AS user_name, u.surname AS user_surname,
+                   c.media AS comment_media, c.commentDate, c.voteHeart, c.voteUp, c.voteDown,
+                   u.name AS user_name, u.surname AS user_surname,
                    u.currentProfilePic AS user_profile_pic
             FROM comments c
             LEFT JOIN users u ON c.ownerId = u.id
@@ -616,6 +630,15 @@ def list_comments(post_id, user_id):
         result = cursor.fetchall()
         cursor.close()
         connection.close()
+
+        # Convert bytes to str for JSON serialization
+        for row in result:
+            if isinstance(row['voteHeart'], bytes):
+                row['voteHeart'] = row['voteHeart'].decode('utf-8')
+            if isinstance(row['voteUp'], bytes):
+                row['voteUp'] = row['voteUp'].decode('utf-8')
+            if isinstance(row['voteDown'], bytes):
+                row['voteDown'] = row['voteDown'].decode('utf-8')
 
         return json_status(True, 1, {"comment_list": result})
 
@@ -828,3 +851,131 @@ def manage_block(my_id, target_id, add_):
     except mysql.connector.Error as error:
         print(f"Error al conectarse a la base de datos: {error}")
         return json_status(False, 0, "Database connection error.")
+
+
+def manage_vote_db(my_id_, entity_id_, entity_type_, vote_type_):
+    my_id_ = int(my_id_)
+    entity_id_ = int(entity_id_)
+
+    # Validar los tipos de entidad y voto
+    if entity_type_ not in ["posts", "comments"]:
+        return json_status(False, 1, {"response": "Invalid entity type."})
+    if vote_type_ not in ["Heart", "Up", "Down"]:
+        return json_status(False, 1, {"response": "Invalid vote type."})
+
+    # Definir el campo a actualizar basado en el tipo de voto
+    vote_field = f"vote{vote_type_}"
+
+    try:
+        connection = mysql.connector.connect(
+            host=HOST,
+            user=USER,
+            password=PASS,
+            database="yip_net"
+        )
+        cursor = connection.cursor(dictionary=True)  # Configura el cursor para devolver resultados como diccionarios
+
+        # Obtener el valor actual del campo de votos
+        cursor.execute(f"SELECT {vote_field} FROM {entity_type_} WHERE id = %s", (entity_id_,))
+        print(f"SELECT {vote_field} FROM {entity_type_} WHERE id = %s", (entity_id_,))
+        result = cursor.fetchone()
+
+        if result is None:
+            return json_status(False, 2, {"response": "Entity not found."})
+
+        # Parsear el campo JSON
+        vote_list = json.loads(result[vote_field])
+
+        # Agregar o eliminar el ID del usuario de la lista
+        if my_id_ in vote_list:
+            vote_list.remove(my_id_)
+            action = "removed"
+        else:
+            vote_list.append(my_id_)
+            action = "added"
+
+        # Actualizar el campo en la base de datos
+        updated_vote_list = json.dumps(vote_list)
+        cursor.execute(f"UPDATE {entity_type_} SET {vote_field} = %s WHERE id = %s", (updated_vote_list, entity_id_))
+        connection.commit()
+
+        return json_status(True, 1, {"response": f"Vote {action} successfully."})
+    
+    except mysql.connector.Error as error:
+        print(f"Error al conectarse a la base de datos: {error}")
+        return json_status(False, 0, "Database connection error.")
+    
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+
+
+def get_news_feed(my_id_):
+    try:
+        connection = mysql.connector.connect(
+            host=HOST,
+            user=USER,
+            password=PASS,
+            database="yip_net"
+        )
+        cursor = connection.cursor(dictionary=True)
+
+        # Obtener el positiveList del usuario actual
+        cursor.execute("SELECT positiveList FROM users WHERE id = %s", (my_id_,))
+        result = cursor.fetchone()
+
+        if not result:
+            return json_status(False, 0, "User not found.")
+
+        # Convertir el positiveList JSON a una lista de IDs
+        positive_list = json.loads(result['positiveList'])
+
+        # Agregar my_id_ al array si no se encuentra allí
+        if my_id_ not in positive_list:
+            positive_list.append(my_id_)
+
+        if not positive_list:
+            return json_status(True, 1, {"post_list": []})
+
+        # Obtener todos los posts cuyos ownerId estén en positive_list
+        format_strings = ','.join(['%s'] * len(positive_list))
+        query = f"""
+            SELECT p.*, u.name, u.surname, u.currentProfilePic 
+            FROM posts p
+            JOIN users u ON p.ownerId = u.id
+            WHERE p.ownerId IN ({format_strings})
+            ORDER BY p.postDate DESC
+        """
+        cursor.execute(query, tuple(positive_list))
+        posts = cursor.fetchall()
+
+        # Convertir los campos potencialmente problemáticos a tipos JSON serializables
+        for post in posts:
+            if 'content' in post and isinstance(post['content'], bytes):
+                post['content'] = post['content'].decode('utf-8')
+            if 'media' in post and isinstance(post['media'], bytes):
+                post['media'] = post['media'].decode('utf-8')
+            if 'sharedByList' in post and isinstance(post['sharedByList'], bytes):
+                post['sharedByList'] = post['sharedByList'].decode('utf-8')
+            if 'postDate' in post and isinstance(post['postDate'], datetime.datetime):
+                post['postDate'] = post['postDate'].isoformat()
+
+            if 'voteHeart' in post and isinstance(post['voteHeart'], bytes):
+                post['voteHeart'] = post['voteHeart'].decode('utf-8')
+            if 'voteUp' in post and isinstance(post['voteUp'], bytes):
+                post['voteUp'] = post['voteUp'].decode('utf-8')
+            if 'voteDown' in post and isinstance(post['voteDown'], bytes):
+                post['voteDown'] = post['voteDown'].decode('utf-8')
+
+        return json_status(True, 1, {"response": posts})
+
+    except mysql.connector.Error as error:
+        print(f"Error al conectarse a la base de datos: {error}")
+        return json_status(False, 0, "Database connection error.")
+    
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()

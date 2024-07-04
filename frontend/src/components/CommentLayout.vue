@@ -2,8 +2,12 @@
     <section>
 
         <div class="comments-bar">
-            <div><button>▲</button> {{ votes }} <button>▼</button></div>
-            <div><button>❤</button> {{ hearts }}</div>
+            <div>
+                <button @click="manageVote('Up', 'posts')" ref="voteUpBtn" :class="getVotesClasses('Up')">▲</button>
+                {{ votes }}
+                <button @click="manageVote('Down', 'posts')" ref="voteDownBtn" :class="getVotesClasses('Down')">▼</button>
+            </div>
+            <div><button @click="manageVote('Heart', 'posts')" ref="voteHeartBtn" :class="getVotesClasses('Heart')">❤</button> {{ hearts }}</div>
             <div><button @click="shareWindow = true" ref="shareBtn">⤷</button> {{ shares }}</div>
             <div class="comment-btn-post activated-btn-post" @click="toCommentBox()">Comment</div>
         </div>
@@ -15,7 +19,9 @@
             <div v-for="(comment, index) in commentList" :key="index" class="comment-user-info">
                 <div class="comment-userimg" v-if="!myBlockedList.includes(comment.comment_owner_id)"
                     :style="`background-image:url('${
-                        this.$ENDPOINT + '/static/users/' + comment.comment_owner_id +'/'+ comment.user_profile_pic || require('../assets/images/default-user.jpg')
+                        comment?.user_profile_pic == ''
+                        ? require('../assets/images/default-user.jpg')
+                        :  this.$ENDPOINT + '/static/users/' + comment.comment_owner_id +'/'+ comment.user_profile_pic
                     }');`
                 "></div>
                 <div class="comment-contents" v-if="!myBlockedList.includes(comment.comment_owner_id)">
@@ -27,6 +33,16 @@
                     <p class="comment-date">{{ comment.commentDate }}</p>
                     <div><MarkdownRenderer :postId="postId+comment.comment_id" :text="comment.comment_content"/></div>
                     <MediaDisplayer v-if="comment.comment_media" class="post-media" :images="comment.comment_media" :ownerId="comment.comment_owner_id"/>
+                    <div class="comment-votes-panel">
+                        <div>
+                            <button @click="manageVote('Up', 'comments', comment.comment_id)" :id="`voteUpBtnComment${comment.comment_id}OfPost${this.postId}`" :class="getVotesCommentClasses('Up', comment.voteUp)" style="background-color:transparent!important; border:none!important;">▲</button>
+                            <span :id="`voteUpDownTxtComment${comment.comment_id}OfPost${postId}`">{{ JSON.parse(comment.voteUp).length - JSON.parse(comment.voteDown).length }}</span>
+                            <button @click="manageVote('Down', 'comments', comment.comment_id)" :id="`voteDownBtnComment${comment.comment_id}OfPost${this.postId}`" :class="getVotesCommentClasses('Down', comment.voteDown)" style="background-color:transparent!important; border:none!important;">▼</button>
+                        </div>
+                        <div><button @click="manageVote('Heart', 'comments', comment.comment_id)" :id="`voteHeartBtnComment${comment.comment_id}OfPost${this.postId}`" :class="getVotesCommentClasses('Heart', comment.voteHeart)" style="background-color:transparent!important; border:none!important;">❤</button>
+                            <span :id="`voteHeartTxtComment${comment.comment_id}OfPost${postId}`">{{ JSON.parse(comment.voteHeart).length }}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -108,12 +124,13 @@ export default {
         shareId: Number,
         numOfComments: Number,
         sharedByList: [String, Array],
+        allPostData: Object,
     },
     data() {
         return {
-            votes: 0,
-            hearts: 0,
-            shares: 0,
+            votes: JSON.parse(this.allPostData.voteUp).length - JSON.parse(this.allPostData.voteDown).length,
+            hearts: JSON.parse(this.allPostData.voteHeart).length,
+            shares: JSON.parse(this.allPostData.sharedByList).length,
             inputText: "",
             preview: false,
             selectedFiles: [],
@@ -189,7 +206,7 @@ export default {
                 .then(data => {
                     if(data.status == "ok"){
                         this.commentList = data.message.comment_list;
-                        console.log(this.commentList)
+                        console.log("listado de comentarios", this.commentList)
                     }
                 })
                 .catch(error => {
@@ -257,13 +274,16 @@ export default {
                     this.$refs.commentTextarea.style.height = "fit-content";
                     this.clearMedia();
                     let newComment = data.message.comment;
-                    console.log(newComment);
+                    console.log("newComment", newComment);
                     newComment.comment_id = newComment.id;
                     newComment.comment_owner_id = newComment.ownerId;
                     newComment.comment_content = newComment.content;
                     newComment.user_profile_pic = newComment.currentProfilePic;
                     newComment.user_name = newComment.name;
                     newComment.user_surname = newComment.surname;
+                    newComment.voteHeart = JSON.stringify(newComment.voteHeart);
+                    newComment.voteUp = JSON.stringify(newComment.voteUp);
+                    newComment.voteDown = JSON.stringify(newComment.voteDown);
                     this.commentList.push(data.message.comment);
                 }
             })
@@ -301,7 +321,108 @@ export default {
             .catch(error => {
                 console.error('Error:', error);
             });
+        },
+        
+        manageVote(voteType_, elementType_, commentId_=0) {
+            const targetEntityId = elementType_ == "posts" ? parseInt(this.postId) : commentId_; // "posts" | "comments"
+            const token = JSON.parse(localStorage.getItem("yipUserData")).token;
+            const formData = new FormData();
+            formData.append("targetEntityId", targetEntityId);
+            formData.append("voteType", voteType_);
+            formData.append("entityType", elementType_);
+
+            fetch(this.$ENDPOINT + "/manage_vote", {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}` // Incluye el token JWT en el encabezado
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Respuesta del servidor:', data);
+                if(data.json.status == "ok"){
+                    this.$nextTick(() => {
+
+                        if(data.json.message.response == "Vote removed successfully."){
+                            if(elementType_ == "posts"){
+                                this.$refs[`vote${voteType_}Btn`].classList.remove(`voted${voteType_}`);
+                                if(voteType_ == "Up"){
+                                    this.votes -= 1;
+                                }else if(voteType_ == "Down"){
+                                    this.votes += 1;
+                                }else{
+                                    this.hearts -= 1;
+                                }
+                            }else
+                            if(elementType_ == "comments"){
+                                document.getElementById(`vote${voteType_}BtnComment${commentId_}OfPost${this.postId}`).classList.remove(`voted${voteType_}`);
+                                const UpDownTxt = document.getElementById(`voteUpDownTxtComment${commentId_}OfPost${this.postId}`);
+                                const HeartTxt = document.getElementById(`voteHeartTxtComment${commentId_}OfPost${this.postId}`);
+                                if(voteType_ == "Up"){
+                                    UpDownTxt.innerHTML = parseInt(UpDownTxt.innerHTML) - 1;
+                                }else if(voteType_ == "Down"){
+                                    UpDownTxt.innerHTML = parseInt(UpDownTxt.innerHTML) + 1;
+                                }else{
+                                    HeartTxt.innerHTML = parseInt(HeartTxt.innerHTML) - 1;
+                                }
+                            }
+                        }else
+                        if(data.json.message.response == "Vote added successfully."){
+                            if(elementType_ == "posts"){
+                                this.$refs[`vote${voteType_}Btn`].classList.add(`voted${voteType_}`);
+                                if(voteType_ == "Up"){
+                                    this.votes += 1;
+                                }else if(voteType_ == "Down"){
+                                    this.votes -= 1;
+                                }else{
+                                    this.hearts += 1;
+                                }
+                            }else
+                            if(elementType_ == "comments"){
+                                document.getElementById(`vote${voteType_}BtnComment${commentId_}OfPost${this.postId}`).classList.add(`voted${voteType_}`);
+                                const UpDownTxt = document.getElementById(`voteUpDownTxtComment${commentId_}OfPost${this.postId}`);
+                                const HeartTxt = document.getElementById(`voteHeartTxtComment${commentId_}OfPost${this.postId}`);
+                                if(voteType_ == "Up"){
+                                    UpDownTxt.innerHTML = parseInt(UpDownTxt.innerHTML) + 1;
+                                }else if(voteType_ == "Down"){
+                                    UpDownTxt.innerHTML = parseInt(UpDownTxt.innerHTML) - 1;
+                                }else{
+                                    HeartTxt.innerHTML = parseInt(HeartTxt.innerHTML) + 1;
+                                }
+                            }
+                        }
+
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        },
+
+        getVotesClasses(voteType_){
+            const voteArr = JSON.parse(this.allPostData[`vote${voteType_}`]);
+            if(voteArr.includes(this.myId)){
+                return `voted${voteType_}`
+            }else{
+                return ""
+            }
+        },
+
+        getVotesCommentClasses(voteType_, arr_){
+            try {
+                const voteArr = JSON.parse(arr_);
+                if(voteArr.includes(this.myId)){
+                    return `voted${voteType_}`
+                }else{
+                    return ""
+                }
+            } catch (error) {
+                return ""
+            }
         }
+
     },
     mounted(){
         if(this.shareId != 0){
@@ -313,8 +434,7 @@ export default {
 </script>
 
 <style scoped>
-section
-{
+section{
     color: white;
     font-family: monospace;
     display: flex;
@@ -434,6 +554,31 @@ section
 .comment-date{
   color: gray;
   font-size: 1.4ch;
+}
+
+.comment-votes-panel{
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 0.5ch;
+    font-family: monospace;
+}
+
+.comment-votes-panel > div{
+    margin-left: 3ch !important;
+    scale: 0.9;
+}
+
+.comment-votes-panel button{
+    border: none;
+    background-color: transparent;
+    color: gray;
+}
+
+.comment-votes-panel button:hover{
+    cursor: pointer;
+    color: white;
+    text-shadow: 0 0 1ch white;
 }
 
 /* input */
@@ -690,6 +835,19 @@ label{
 
 .cancel-btn:hover{
     background-color: #686A70;
+}
+
+/* vote styles */
+.votedUp{
+    color: greenyellow !important;
+}
+
+.votedDown{
+    color: red !important;
+}
+
+.votedHeart{
+    color: rgb(255, 0, 85) !important;
 }
 
 /********************************************************************

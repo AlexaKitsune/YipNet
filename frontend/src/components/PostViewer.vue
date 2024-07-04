@@ -6,7 +6,9 @@
 		<section class="post-user-info">
 			<div class="post-userimg updater-profile-pic"
 				:style="`background-image:url('${
-					this.$ENDPOINT + '/static/users/' + loadedPostData?.ownerData?.id +'/'+ loadedPostData?.ownerData?.currentProfilePic || require('../assets/images/default-user.jpg')
+					loadedPostData?.ownerData?.currentProfilePic == ''
+					? require('../assets/images/default-user.jpg')
+					: this.$ENDPOINT + '/static/users/' + loadedPostData?.ownerData?.id +'/'+ loadedPostData?.ownerData?.currentProfilePic 
 				}');`
 			">
 				<a v-if="loadedPostData.ownerData" :href="toProfile(loadedPostData.ownerData.id)"></a>
@@ -52,7 +54,13 @@
 		</section>
 		<!--End shared post-->
 
-      <CommentLayout :postId="postData.id.toString()" :numOfComments="postData.commentCount" :shareId="postData.shareId" :sharedByList="postData.sharedByList" class="post-comments"/>
+      <CommentLayout
+		:postId="postData.id.toString()"
+		:numOfComments="postData.commentCount"
+		:shareId="postData.shareId"
+		:sharedByList="postData.sharedByList"
+		:allPostData="postData"
+	class="post-comments"/>
 
     </div>
   
@@ -117,29 +125,33 @@ export default {
 	mounted(){
 		const data = this.postData;
 		this.loadedPostData = {
-		"id": data.id,
-		"ownerData": {
-			"id": data.ownerId,
-			"name": data.name,
-			"surname": data.surname,
-			"currentProfilePic": data.currentProfilePic //== "" ? null : data.ow
-		},
-		"date": data.postDate,
-		"content": data.content,
-		"sharedByList": data.sharedByList,
-		"shareId": data.shareId,
-		"media": data.media,
-		"apiOrigin": data.apiOrigin,
-		"nsfwPost": data.nsfwPost,
-		"privatePost": data.privatePost,
-		"commentCount": data.commentCount
+			"id": data.id,
+			"ownerData": {
+				"id": data.ownerId,
+				"name": data.name,
+				"surname": data.surname,
+				"currentProfilePic": data.currentProfilePic //== "" ? null : data.ow
+			},
+			"date": data.postDate,
+			"content": data.content,
+			"sharedByList": data.sharedByList,
+			"shareId": data.shareId,
+			"media": data.media,
+			"apiOrigin": data.apiOrigin,
+			"nsfwPost": data.nsfwPost,
+			"privatePost": data.privatePost,
+			"commentCount": data.commentCount,
+			"voteHeart": data.voteHeart,
+			"voteUp": data.voteUp,
+			"voteDown": data.voteDown,
 		}
 
 		if(this.loadedPostData.shareId != 0){
 			this.getSharedPostInfo();
 		}
-		/*console.log(this.loadedPostData);
 
+		/*console.log(this.loadedPostData);
+		
 		console.log("post data:", typeof this.postData);
 		setTimeout(() => {
 		console.log("post data:", typeof this.postData);

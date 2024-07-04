@@ -104,6 +104,10 @@ export default {
                     console.log('Respuesta del servidor:', data);
                     if(data.message.response){
                         console.log("Cuenta creada")
+                        this.mode = "login";
+                        setTimeout(() => {
+                            this.login();
+                        }, 80);
                     }
                 })
                 .catch(error => {

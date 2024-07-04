@@ -1,4 +1,5 @@
 backend/venv
+backend/.env
 backend/src/__pycache__
 backend/src/database/__pycache__
 backend/src/static/public/*

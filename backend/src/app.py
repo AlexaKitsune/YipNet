@@ -289,6 +289,25 @@ def manage_block(target_id):
         return jsonify({"status": "error", "message": str(e)})
 
 
+@app.route('/manage_vote', methods=['POST'])
+@jwt_required()
+def manage_vote():
+    try:
+        current_user_email = get_jwt_identity()
+        user_data = query.get_user_data("email", {"email": current_user_email})
+        user_id = user_data["json"]["message"]["id"]
+
+        data = {
+            "target_entity_id": request.form.get('targetEntityId'),
+            "entity_type": request.form.get('entityType'),
+            "vote_type": request.form.get('voteType')
+        }
+
+        response = query.manage_vote_db(user_id, data["target_entity_id"], data["entity_type"], data["vote_type"])
+        
+        return jsonify(response)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
 
 
 @app.route('/follow_list/<int:target_id>', methods=['GET'])
@@ -298,6 +317,15 @@ def follow_list(target_id):
         return jsonify(response["json"])
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
+    
+
+@app.route('/news_feed/<int:my_id>', methods=['GET'])
+def news_feed(my_id):
+    try:
+        response = query.get_news_feed(my_id)
+        return jsonify(response["json"])
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}) 
 
 
 if __name__ == '__main__':

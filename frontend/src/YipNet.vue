@@ -3,9 +3,9 @@
     <NavBar id="NavBar-component-MAIN"/>
     <nav id="NavBar-space"></nav>
     <div v-if="currentView === 'LoginRegister'"><LoginRegister/></div>
-    <div v-if="currentView === 'NewsFeed'"><NewsFeed/></div>
+    <div v-if="currentView === 'NewsFeed'"><NewsFeed :key="keyComponent"/></div>
     <div v-if="currentView === 'SinglePost'"><SinglePost/></div>
-    <div v-if="currentView === 'ProfileUser'"><ProfileUser/></div>
+    <div v-if="currentView === 'ProfileUser'"><ProfileUser :key="keyComponent"/></div>
     <div v-if="currentView === 'ConfigSettings'"><ConfigSettings/></div>
 
     <div v-if="currentView === 'NotFound'"><NotFound/></div>
@@ -43,13 +43,18 @@ export default {
     data(){
         return{
             postCreationActive: false,
-            sessionActive: false
+            sessionActive: false,
+            keyComponent: 0,
         }
     },
 
     methods:{
         switchPostCreator(mode_){
             this.postCreationActive = mode_;
+        },
+
+        changeKeyComponent(){
+            this.keyComponent++;
         }
     },
 

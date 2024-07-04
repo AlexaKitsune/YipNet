@@ -1,9 +1,13 @@
-import re, os, uuid, random, string
+import re, os, uuid, random, string, yagmail
+from dotenv import load_dotenv
 #char_alphanumeric = string.ascii_letters + string.digits
 char_greek = 'αβγδεζηθικλμνξοπρστυφχψω'
 char_cyrilic = 'абвгдежзийклмнопрстуфхцчшщъыьэюя'
 char_katakana = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン'
 permissible_characters = char_greek + char_cyrilic + char_katakana # + char_alphanumeric
+
+load_dotenv()
+
 
 def validateString(type_, string_):
     if(type_ == "email"):
@@ -38,7 +42,6 @@ def json_status(success_, status_, message_):
     }
 
 
-
 def create_folder(id_, get_=False):
     static_users_folder = './src/static/users/'
     user_folder_path = os.path.join(static_users_folder, str(id_))
@@ -61,3 +64,22 @@ def generate_api_key(id_):
     else:
         result += random_str[len(random_uuid):]
     return result
+
+
+def send_mail(subject, body, to_email):
+    email_user = os.getenv("SMTP_USERNAME")
+    email_pass = os.getenv("SMTP_PASSWORD")
+
+    yag = yagmail.SMTP(email_user, email_pass)
+
+    try:
+        yag.send(
+            to=to_email,
+            subject=subject,
+            contents=body
+        )
+        print("Correo enviado exitosamente a", to_email)
+    except Exception as e:
+        print("Error al enviar el correo:", e)
+
+#send_mail("Asunto del correo", "Cuerpo del correo", "example@gmail.com")

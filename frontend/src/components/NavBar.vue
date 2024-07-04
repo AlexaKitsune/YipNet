@@ -1,7 +1,7 @@
 <template>
     <nav>
 
-        <div>YipNet</div>
+        <div @click="goToNewsFeed()" class="yip-net-logo">YipNet</div>
         <div></div>
         <div v-if="userData.id">
             <div v-if="userData.id" :class="`nav-pic ${userData.currentProfilePic == '' || userData.currentProfilePic == null || userData.currentProfilePic == undefined || userData.currentProfilePic.length == 0 ? 'profile-pic-undefined' : ''}`" @click="toProfile(userData.id)">
@@ -27,12 +27,21 @@ export default {
     },
     methods:{
         toProfile(id_){
+            window.scrollTo(0, 0);
             window.location.hash = "#/profile~" + id_;
         },
 
         reload(){
+            window.scrollTo(0, 0);
             event.preventDefault();
             history.pushState(null, null, '#/settings');
+            window.location.reload();
+        },
+
+        goToNewsFeed(){
+            window.scrollTo(0, 0);
+            event.preventDefault();
+            history.pushState(null, null, '#/newsfeed');
             window.location.reload();
         }
     },
@@ -61,6 +70,10 @@ nav > div{
     display: flex;
     align-items: center;
     margin: 1ch;
+}
+
+.yip-net-logo{
+    cursor: pointer;
 }
 
 .nav-pic, .nav-pic > div{

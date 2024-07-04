@@ -45,7 +45,7 @@ py -3 -m venv venv
 venv\Scripts\activate
 
 # 4. nstall the required Python packages from the requirements.txt file:
-pip install -r  requirements.txt
+pip install -r requirements.txt
 ```
 
 Finally, run the development server with the following command:

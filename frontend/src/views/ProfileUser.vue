@@ -8,6 +8,7 @@
             </div>
             <div class="profile-pic">
                 <img
+                    ref="profilePic"
                     :src="`${this.$ENDPOINT}/static/users/${profileData.id}/${profileData.currentProfilePic}`"
                     :class="`profile-pic sub-profile-pic updater-profile-pic ${profileData.currentProfilePic == '' || profileData.currentProfilePic == null || profileData.currentProfilePic == undefined || profileData.currentProfilePic.length == 0 ? 'profile-pic-undefined' : ''}`"
                 >
@@ -201,7 +202,9 @@ export default {
                             yipUserData.userData.currentProfilePic = data.message.image_added;
                             document.querySelectorAll(".updater-profile-pic").forEach(pic => { 
                                 pic.style.backgroundImage = `url(${this.$ENDPOINT}/static/users/${this.profileData.id}/${data.message.image_added})`;
+                                pic.src = `${this.$ENDPOINT}/static/users/${this.profileData.id}/${data.message.image_added}`;
                             });
+                            this.$refs.profilePic.src = `${this.$ENDPOINT}/static/users/${this.profileData.id}/${data.message.image_added}`;
                         }else{
                             yipUserData.userData.currentCoverPic = data.message.image_added;
                             document.querySelectorAll(".updater-cover-pic").forEach(pic => { 
@@ -505,6 +508,10 @@ export default {
     overflow: auto;
     left: 0;
     background-color: rgba(0, 0, 0, 0.75);
+}
+
+.update-pics{
+    z-index: 2;
 }
 
 .block-section{
