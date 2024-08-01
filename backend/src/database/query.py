@@ -1,7 +1,9 @@
 import mysql.connector, json
-from functions import validateString, json_status, create_folder
+from functions import validateString, json_status, create_folder, send_mail_formatted
 import datetime
 import bcrypt
+import random
+import string
 
 json_file = "./src/config.json"
 try:
@@ -53,6 +55,11 @@ def user_exists(check_by, data_):
         return json_status(False, 0, "Database connection error.")
 
 
+def generate_random_key(length=64):
+    letters_and_digits = string.ascii_letters + string.digits
+    return ''.join(random.choice(letters_and_digits) for i in range(length))
+
+
 def add_user(data_):
     print(data_)
 
@@ -86,19 +93,22 @@ def add_user(data_):
     # Encriptar la contraseña usando bcrypt
     hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
+    # Generar la clave aleatoria para verifyKey
+    verify_key = generate_random_key()
+
     try:
         connection = mysql.connector.connect(
             host=HOST,
             user=USER,
-            # password=PASS,
+            password=PASS,
             database="yip_net"
         )
         cursor = connection.cursor()
         insert_query = """
-            INSERT INTO users (name, surname, birthday, gender, email, password, currentCoverPic, currentProfilePic, registrationDate, positiveList, externalPositiveList, negativeList, externalNegativeList, userSettings)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s, %s, %s, %s, %s)
+            INSERT INTO users (name, surname, birthday, gender, email, password, currentCoverPic, currentProfilePic, registrationDate, positiveList, externalPositiveList, negativeList, externalNegativeList, userSettings, verifyKey, verified)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), %s, %s, %s, %s, %s, %s, 0)
         """
-        values = (name, surname, birthday, gender, email, hashed_password, currentCoverPic, currentProfilePic, positiveList, externalPositiveList, negativeList, externalNegativeList, userSettings)
+        values = (name, surname, birthday, gender, email, hashed_password, currentCoverPic, currentProfilePic, positiveList, externalPositiveList, negativeList, externalNegativeList, userSettings, verify_key)
         cursor.execute(insert_query, values)
         connection.commit()
         user_id = cursor.lastrowid
@@ -106,12 +116,13 @@ def add_user(data_):
         connection.close()
 
         create_folder(user_id)
+        send_mail_formatted("YipNet Verification Account", [user_id, verify_key, name], email)
         return json_status(True, 1, {"response": "User added."})
 
     except mysql.connector.Error as error:
         print(f"Error al conectarse a la base de datos: {error}")
         return json_status(False, 0, "Database connection error.")
-
+    
 
 def login(data_):
     if "email" not in data_ or "password" not in data_:
@@ -193,6 +204,8 @@ def get_user_data(get_by, data_):
             "userSettings": json.loads(user_data[15]),
             "theme": user_data[16],
             "registrationDate": str(user_data[17]), # Arreglar
+            "verified": str(user_data[18]),
+            #"verifyKey": str(user_data[19]),
         }
 
         cursor.close()
@@ -496,6 +509,8 @@ def update_profile(id_, data_):
     new_negative_list =  json.dumps(data_["negativeList"])
     new_description = data_["description"]
 
+    print(">>>DESC>>>", new_description)
+
     try:
         connection = mysql.connector.connect(
             host=HOST,
@@ -529,6 +544,49 @@ def update_profile(id_, data_):
     except mysql.connector.Error as error:
         print(f"Error al conectarse a la base de datos: {error}")
         return json_status(False, 0, "Database connection error")
+    finally:
+        cursor.close()
+        connection.close()
+
+
+def update_pass(my_id, old_pass, new_pass):
+    try:
+        connection = mysql.connector.connect(
+            host=HOST,
+            user=USER,
+            password=PASS,
+            database="yip_net"
+        )
+        cursor = connection.cursor(dictionary=True)
+
+        # Verificar si el usuario existe
+        cursor.execute("SELECT password FROM users WHERE id = %s", (my_id,))
+        user = cursor.fetchone()
+
+        if not user:
+            return {"status": "error", "message": "User not found"}
+
+        # Verificar la contraseña antigua
+        if not bcrypt.checkpw(old_pass.encode('utf-8'), user['password'].encode('utf-8')):
+            return {"status": "error", "message": "Incorrect old password"}
+
+        # Validar la nueva contraseña
+        if not validateString("password", new_pass):
+            return {"status": "error", "message": "New password does not meet the required criteria"}
+
+        # Encriptar la nueva contraseña
+        hashed_new_pass = bcrypt.hashpw(new_pass.encode('utf-8'), bcrypt.gensalt())
+
+        # Actualizar la contraseña en la base de datos
+        cursor.execute("UPDATE users SET password = %s WHERE id = %s", (hashed_new_pass, my_id))
+        connection.commit()
+
+        return {"status": "success", "message": "Password updated successfully"}
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
     finally:
         cursor.close()
         connection.close()
@@ -979,3 +1037,40 @@ def get_news_feed(my_id_):
         if connection.is_connected():
             cursor.close()
             connection.close()
+
+
+def verify_account(id_, verify_key_received):
+    try:
+        # Conecta a MySQL (ajusta los parámetros según sea necesario)
+        connection = mysql.connector.connect(
+            host=HOST,
+            user=USER,
+            password=PASS,
+            database='yip_net'  # Asegúrate de usar el nombre de la base de datos correcta
+        )
+
+        # Crea un cursor para ejecutar consultas SQL
+        cursor = connection.cursor()
+
+        # Consulta para verificar el usuario
+        query = "SELECT verifyKey FROM users WHERE id = %s"
+        cursor.execute(query, (id_,))
+        result = cursor.fetchone()
+
+        if result and result[0] == verify_key_received:
+            # Si coincide el verifyKey, actualiza el valor de 'verified'
+            update_query = "UPDATE users SET verified = 1 WHERE id = %s"
+            cursor.execute(update_query, (id_,))
+            connection.commit()
+            return json_status(True, 1, {"response": "verified"})
+        else:
+            return json_status(False, 0, {"response": "error on verification"})
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return False
+
+    finally:
+        # Cierra el cursor y la conexión a la base de datos
+        cursor.close()
+        connection.close()

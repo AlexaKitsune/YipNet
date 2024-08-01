@@ -25,7 +25,7 @@
                 <label><input type="radio" name="gender" :value="this.$refs.otherGender?.value || 0" v-model="accessData.gender">Other</label>
             </div>
             <div v-if="accessData.gender != 'male' && accessData.gender != 'female' && accessData.gender != undefined"><input type="text" ref="otherGender" placeholder="Custom gender"></div>
-            <button class="BIG-BUTTON MAIN-BUTTON" @click="register()">Register</button>
+            <button class="BIG-BUTTON MAIN-BUTTON" @click="register()" ref="registerBtn">Register</button>
             <button class="MIN-BUTTON" @click="switchMode('login')">Login</button>
         </section>
 
@@ -85,6 +85,8 @@ export default {
 
         register(){
             console.log(this.accessData);
+            this.$refs.registerBtn.style.pointerEvents = "none";
+            this.$refs.registerBtn.style.opacity = "0.5";
             fetch(this.$ENDPOINT+"/register", {
                     method: 'POST',
                     headers: {
@@ -102,6 +104,8 @@ export default {
                 .then(response => response.json())
                 .then(data => {
                     console.log('Respuesta del servidor:', data);
+                    this.$refs.registerBtn.style.pointerEvents = "all";
+                    this.$refs.registerBtn.style.opacity = "1";
                     if(data.message.response){
                         console.log("Cuenta creada")
                         this.mode = "login";
@@ -112,6 +116,8 @@ export default {
                 })
                 .catch(error => {
                     console.error('Error:', error);
+                    this.$refs.registerBtn.style.pointerEvents = "all";
+                    this.$refs.registerBtn.style.opacity = "1";
                 });
         },
 

@@ -21,7 +21,7 @@
                 <h1>{{ profileData.name  +" "+ profileData.surname }}   </h1>
                 <!--<p class="profile-arroba">@</p>-->
                 <p>
-                    <span v-if="description">{{ description }}</span>
+                    <span v-if="target.description">{{ target.description }}</span>
                     <span v-else class="no-description">Add description.</span>
                 </p>
             </div>
@@ -104,7 +104,8 @@ export default {
             myPositiveList: [],
             target:{
                 externalPositiveList: [],
-                positiveList: []
+                positiveList: [],
+                description: false,
             },
             showFollowList: false,
             blockAlert: false,
@@ -116,8 +117,9 @@ export default {
             let userId = window.location.href.split("~")[1];
             userId = parseInt(userId);
             this.targetId = userId;
-            const blockedList = JSON.parse(localStorage.getItem("yipUserData")).userData.negativeList;
-            if(blockedList.includes(this.targetId)){
+            const myBlockedList = JSON.parse(localStorage.getItem("yipUserData")).userData.negativeList;
+            const myExternalNegativeList = JSON.parse(localStorage.getItem('yipUserData')).userData.externalNegativeList;
+            if(myBlockedList.includes(this.targetId) || myExternalNegativeList.includes(this.targetId)){
                 window.location.hash = "/NotFound";
                 return;
             }
@@ -127,9 +129,11 @@ export default {
                     .then(response => response.json())
                     .then(data => {
                         console.log("selected data:")
+                        console.log("all data", data)
                         this.profileData = data.message;
                         this.target.positiveList = this.profileData.positiveList;
                         this.target.externalPositiveList = this.profileData.externalPositiveList;
+                        this.target.description = data.message.description;
                     })
                     .catch(error => {
                         console.error("Error: ", error);
@@ -283,7 +287,16 @@ export default {
                     console.log("blocked", data.message.target_user);
 
                     if(!yipUserData.userData.negativeList.includes(data.message.target_user)){
-                        yipUserData.userData.negativeList.push(data.message.target_user);
+                        let negativeList;
+                        if(typeof yipUserData.userData.negativeList == "string"){
+                            negativeList = JSON.parse(yipUserData.userData.negativeList);
+                        }else{
+                            negativeList = yipUserData.userData.negativeList;
+                        }
+
+                        console.log(negativeList)
+                        negativeList.push(data.message.target_user);
+                        yipUserData.userData.negativeList = negativeList;
                     }
 
                     localStorage.setItem("yipUserData", JSON.stringify(yipUserData));
@@ -306,6 +319,7 @@ export default {
             this.getUser();
         };
         window.addEventListener("hashchange", this.hashChangeHandler);
+        
     },
 
     // Asegúrate de eliminar el listener cuando el componente se destruye

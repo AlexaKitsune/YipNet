@@ -94,6 +94,8 @@ def create_database_and_tables():
             userSettings JSON NOT NULL,
             theme VARCHAR(63),
             registrationDate DATETIME NOT NULL,
+            verified TINYINT(1) NOT NULL DEFAULT 0,
+            verifyKey VARCHAR(64) NOT NULL,
             origin VARCHAR(255)
         );
         """

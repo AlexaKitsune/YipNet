@@ -82,4 +82,63 @@ def send_mail(subject, body, to_email):
     except Exception as e:
         print("Error al enviar el correo:", e)
 
+
+def send_mail_formatted(subject_, data_body_, to_email):
+    id = data_body_[0],
+    verify_key = data_body_[1]
+    name = data_body_[2]
+
+    template_mailing = f"""
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title></title>
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700;900&display=swap" rel="stylesheet">
+        </head>
+        <body style="margin:0; padding:0; background-color:#F2F2F2;">
+
+        <center>
+        <div style="background-color:#F2F2F2; max-width: 640px; margin: auto;">
+        <!--[if mso]> <table role="presentation" width="640" cellspacing="0" cellpadding="0" border="0" align="center"> <tr> <td> <![endif]-->
+
+            <table style="width:100%; max-width:640px; background-color:white" cellspacing="0" cellpadding="0">
+                <tr>
+                    <p style="font-family:'Montserrat',sans-serif; color:#8A2BE2; font-size:58px; font-weight:bolder; margin-top:30px; margin-bottom:10px;">
+                        YipNet
+                    </p>
+                    <p style="font-family:'Montserrat',sans-serif; color:#8A2BE2; font-size:20px; margin-top:0;">
+                        Verification Account
+                    </p>
+                </tr>
+            </table>
+            <table style="width:100%; max-width:640px; background-color:white;" cellspacing="0" cellpadding="0">
+                <tr>
+                    <p style="font-family:'Montserrat',sans-serif; color:black; font-weight:bolder; font-size:16px;">
+                        Hello, {name}!
+                    </p>
+                    <p style="font-family:'Montserrat',sans-serif; font-size:16px; text-wrap:balance;">
+                        You've succesfully created your YipNet account.<br>Just confirm yor email address and activate it by click the button below.
+                    </p>
+                    <a href="localhost:8080/#/verify~{id}&{verify_key}">
+                        <button style="font-family:'Montserrat',sans-serif; width:200px; height:40px; margin-top:10px; font-size:16px; color:white; background-color:#8A2BE2; border:none;">
+                            Verify your email
+                        </button>
+                    </a>
+                    <p style="font-family:'Montserrat',sans-serif; font-size:14px; color:rgb(143, 143, 143); margin-top:24px">
+                        Thank you from the YipNet team
+                    </p>
+                </tr>
+            </table>
+
+        <!--[if mso]> </td> </tr> </table> <![endif]-->
+        </div>
+        </center>
+
+        </body>
+        </html>
+    """
+    send_mail(subject_, template_mailing, to_email)
+
 #send_mail("Asunto del correo", "Cuerpo del correo", "example@gmail.com")

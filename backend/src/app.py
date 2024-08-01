@@ -53,6 +53,20 @@ def register_user():
         return jsonify(register_user["json"])
     
 
+@app.route('/verify', methods=['POST'])
+def verify_account_route():
+    try:
+        data = request.json
+        id_ = data.get('receivedId')
+        verify_key = data.get('receivedVerifyKey')
+        
+        response = query.verify_account(id_, verify_key)
+
+        return jsonify(response["json"])
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+    
+
 @app.route('/profile/<int:id>', methods=['GET'])
 def get_profile(id):
     user_data = query.get_user_data("id", id)
@@ -177,6 +191,25 @@ def update_profile():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
     
+
+@app.route('/update_pass', methods={'POST'})
+@jwt_required()
+def update_pass():
+    try:
+        data = request.json
+
+        current_user_email = get_jwt_identity()
+        user_id = query.get_user_data("email", {"email": current_user_email})
+        user_id = user_id["json"]["message"]["id"]
+
+        old_pass = data.get("oldPass")
+        new_pass = data.get("newPass")
+
+        response = query.update_pass(user_id, old_pass, new_pass)
+        return jsonify(response)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
 
 @app.route('/api/<string:action>', methods={'GET'})
 @jwt_required()

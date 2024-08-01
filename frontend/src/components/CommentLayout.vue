@@ -17,14 +17,14 @@
             <button @click="getComments()" class="load-comments-btn MAIN-BUTTON">See {{ numOfComments }} comments</button>
             <!-- Un v-for con toda la carga de comentarios. Lo siguiente es solo de ejemplo. -->
             <div v-for="(comment, index) in commentList" :key="index" class="comment-user-info">
-                <div class="comment-userimg" v-if="!myBlockedList.includes(comment.comment_owner_id)"
+                <div class="comment-userimg" v-if="!myBlockedList.includes(comment.comment_owner_id) && !myExternalNegativeList.includes(comment.comment_owner_id)"
                     :style="`background-image:url('${
                         comment?.user_profile_pic == ''
                         ? require('../assets/images/default-user.jpg')
                         :  this.$ENDPOINT + '/static/users/' + comment.comment_owner_id +'/'+ comment.user_profile_pic
                     }');`
                 "></div>
-                <div class="comment-contents" v-if="!myBlockedList.includes(comment.comment_owner_id)">
+                <div class="comment-contents" v-if="!myBlockedList.includes(comment.comment_owner_id) && !myExternalNegativeList.includes(comment.comment_owner_id)">
                     <div class="comment-panel">
                         <span v-if="parseInt(myId) == parseInt(comment.comment_owner_id)" class="del-comment">🗑️</span>
                         <span v-else>🚨</span>
@@ -137,6 +137,7 @@ export default {
             commentList: [],
             myId: JSON.parse(localStorage.getItem("yipUserData")).userData.id,
             myBlockedList: JSON.parse(localStorage.getItem("yipUserData")).userData.negativeList,
+            myExternalNegativeList: JSON.parse(localStorage.getItem('yipUserData')).userData.externalNegativeList,
             shareIdData: 0,
             shareWindow: false,
             shareContent: "",

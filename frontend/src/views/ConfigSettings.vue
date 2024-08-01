@@ -4,7 +4,7 @@
 
         <button class="MAIN-BUTTON logout" @click="logOut()">Log out</button>
 
-        {{ userData }}
+        <!--{{ userData }}-->
 
         <section class="settings-general">
             <h2>General settings</h2>
@@ -41,8 +41,8 @@
             <button class="BIG-BUTTON MAIN-BUTTON" @click="updateProfile()">Update profile</button>
         </section>
 
-        {{ profileGeneralSettings }}
-        {{ customGender }}
+        <!--{{ profileGeneralSettings }}-->
+        <!--{{ customGender }}-->
 
         <hr v-if="allowAPI">
 
@@ -91,6 +91,7 @@
 
                 <div>
                     <button @click="setCodeExample('js')" :class="`BIG-BUTTON SECONDARY-BUTTON ${exampleCode == 'js'? 'selected-lang-button' : ''}`">Javascript</button>
+                    &nbsp;&nbsp;&nbsp;
                     <button @click="setCodeExample('py')" :class="`BIG-BUTTON SECONDARY-BUTTON ${exampleCode == 'py'? 'selected-lang-button' : ''}`">Python</button>
                 </div>
                 
@@ -105,14 +106,23 @@
         <section class="settings-password">
             <h2>Change password</h2>
             <p>Current password:</p>
-            <input type="password" required>
+            <input type="password" required ref="inputOldPass">
             <p><br>New password:</p>
-            <input type="password" required>
+            <input type="password" required ref="inputNewPass1">
             <p>Confirm new password:</p>
-            <input type="password" required>
+            <input type="password" required ref="inputNewPass2">
 
-            <button class="BIG-BUTTON MAIN-BUTTON">Update password</button>
+            <p v-if="passwordError.active" class="error-pass">{{ passwordError.msg }}</p>
+            <button class="BIG-BUTTON MAIN-BUTTON" @click="updatePass()" ref="updatePwBtn">Update password</button>
         </section>
+
+        <div v-if="popUpOkUpdates.active" class="popUpOkUpdates">
+            <div>
+                <div class="popUpOkUpdatesClose" @click="popUpOkUpdates.active = false;">+</div>
+                <p>{{ popUpOkUpdates.msg }}</p>
+                <button @click="popUpOkUpdates.active = false;" class="BIG-BUTTON MAIN-BUTTON">Ok</button>
+            </div>
+        </div>
 
     </main>
 </template>
@@ -137,9 +147,11 @@ export default {
             userData,
             apiCodeKey: "",
             exampleCode: "",
-            allowAPI: false,
+            allowAPI: false, //Cambiar a true cuando acabe su desarrollo
             profileGeneralSettings,
-            customGender
+            customGender,
+            passwordError: {active: false, msg: ""},
+            popUpOkUpdates: {active: false, msg: ""},
         };
     },
 
@@ -216,6 +228,70 @@ export default {
             .then(response => response.json())
             .then(data => {
                 console.log(data);
+                if(data.status == "ok"){
+                    let yipUserData = JSON.parse(localStorage.getItem('yipUserData'));
+                    yipUserData.userData.description = profileGeneralSettingsCopy.description;
+                    localStorage.setItem("yipUserData", JSON.stringify(yipUserData));
+                    this.popUpOkUpdates.active = true;
+                    this.popUpOkUpdates.msg = "Profile updated successfully";
+                }
+            })
+        },
+
+        updatePass(){
+            const oldPass = this.$refs.inputOldPass;
+            const newPass1 = this.$refs.inputNewPass1;
+            const newPass2 = this.$refs.inputNewPass2;
+            if(oldPass.value == ""){
+                oldPass.focus();
+                return;
+            }
+            if(newPass1.value == ""){
+                newPass1.focus();
+                return;
+            }
+            if(newPass2.value == ""){
+                newPass2.focus();
+                return;
+            }
+            if(newPass1.value != newPass2.value){
+                this.passwordError.active = true;
+                this.passwordError.msg = "Both new passwords do not match";
+                return;
+            }
+            this.$refs.updatePwBtn.style.opacity = 0.5;
+            this.$refs.updatePwBtn.style.pointerEvents = "none";
+            this.passwordError.active = false;
+
+            const token = JSON.parse(localStorage.getItem("yipUserData")).token;
+            fetch(this.$ENDPOINT+"/update_pass", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` // Incluye el token JWT en el encabezado
+                },
+                body: JSON.stringify({
+                    oldPass: oldPass.value,
+                    newPass: newPass1.value,
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                this.$refs.updatePwBtn.style.opacity = 1;
+                this.$refs.updatePwBtn.style.pointerEvents = "all";
+                this.passwordError.active = true;
+                if(data.message == "Incorrect old password"){
+                    this.passwordError.message = "Incorrect current password.";
+                }
+                if(data.message == "New password does not meet the required criteria"){
+                    this.passwordError = "Password must be at least 8 characters, at least 1 number, 1 uppercase, 1 lowercase and 1 special character";
+                }
+                if(data.status == "ok" || data.message == "Password updated successfully"){
+                    this.passwordError.active = false;
+                    this.popUpOkUpdates.active= true;
+                    this.popUpOkUpdates.msg = "Password updated successfully";
+                }
             })
         },
 
@@ -352,6 +428,68 @@ input[type=date]{
 
 .settings-password p{
     margin-bottom: 0.5ch;
+}
+
+.error-pass{
+    color:orange;
+}
+
+.popUpOkUpdates{
+    position: fixed;
+    z-index: 10;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.popUpOkUpdates > div{
+    background-color: #343538;
+    padding: 2ch;
+    border-radius: 2ch;
+    box-shadow: 0ch 0ch 2ch rgba(0, 0, 0, 0.5);
+    position: relative;
+    min-width: 20ch;
+    min-height: 10ch;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.popUpOkUpdates p{
+    margin: 2ch;
+    margin-top: 3ch;
+}
+
+.popUpOkUpdatesClose{
+    font-weight: bolder;
+    width: 1ch;
+    height: 1ch;
+    font-size: 3ch;
+    transform: rotate(45deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background-color: transparent;
+    border: none;
+    color: gray;
+    transition: all 0.1s;
+    position: absolute;
+    top: 1ch;
+    right: 1ch;
+}
+
+.popUpOkUpdatesClose:hover{
+    cursor: pointer;
+    color: lightgray;
+    transition: all 0.2s;
 }
 
 /********************************************************************

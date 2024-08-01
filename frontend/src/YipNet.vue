@@ -7,6 +7,7 @@
     <div v-if="currentView === 'SinglePost'"><SinglePost/></div>
     <div v-if="currentView === 'ProfileUser'"><ProfileUser :key="keyComponent"/></div>
     <div v-if="currentView === 'ConfigSettings'"><ConfigSettings/></div>
+    <div v-if="currentView === 'VerifyAccount'"><VerifyAccount/></div>
 
     <div v-if="currentView === 'NotFound'"><NotFound/></div>
 
@@ -14,6 +15,13 @@
     <div v-if="sessionActive">
       <div v-if="postCreationActive"><PostCreator id="PostCreator-component-MAIN"/></div>
       <div class="post-creator-launch" @click="switchPostCreator(true)" v-else>✎</div>
+    </div>
+    <div class="isVerified" v-if="sessionActive && verifyAccData.verifiedAccount == 0 && verifyAccData.showVerifyAlert">
+        <div class="close-verify" @click="verifyAccData.showVerifyAlert = false">+</div>
+        <p>
+            <b>A verification email has been sent to your email address.</b><br>
+            Your account and all associated information will be deleted in 72 hours (<b>{{verifyAccData.countdown}}</b>) if you do not verify your email.
+        </p>
     </div>
   </main>
 </template>
@@ -28,6 +36,7 @@ import SinglePost from "./views/SinglePost.vue";
 import NotFound from './views/NotFound.vue';
 import PostCreator from "./components/PostCreator.vue";
 import ConfigSettings from "./views/ConfigSettings.vue";
+import VerifyAccount from './views/VerifyAccount.vue';
 export default {
     components: {
     NavBar,
@@ -37,7 +46,8 @@ export default {
     SinglePost,
     NotFound,
     PostCreator,
-    ConfigSettings
+    ConfigSettings,
+    VerifyAccount,
 },
     name: "YipNet",
     data(){
@@ -45,6 +55,12 @@ export default {
             postCreationActive: false,
             sessionActive: false,
             keyComponent: 0,
+            verifyAccData: {           
+                verifiedAccount: 0,
+                showVerifyAlert: true,
+                registrationDate: "",
+                countdown: "",
+            }
         }
     },
 
@@ -55,6 +71,30 @@ export default {
 
         changeKeyComponent(){
             this.keyComponent++;
+        },
+
+        startCountdown() {
+            const registrationDate = new Date(this.verifyAccData.registrationDate);
+            const endTime = new Date(registrationDate.getTime() + 72 * 60 * 60 * 1000); // 72 hours later
+
+            const updateCountdown = () => {
+                const now = new Date();
+                const timeRemaining = endTime - now;
+
+                if (timeRemaining > 0) {
+                    const days = Math.floor(timeRemaining / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((timeRemaining / (1000 * 60 * 60)) % 24);
+                    const minutes = Math.floor((timeRemaining / (1000 * 60)) % 60);
+                    const seconds = Math.floor((timeRemaining / 1000) % 60);
+
+                    this.verifyAccData.countdown = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+                } else {
+                    this.verifyAccData.countdown = "Expired";
+                }
+            };
+
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
         }
     },
 
@@ -77,6 +117,8 @@ export default {
                 return "ProfileUser";
             else if (route === "settings")
                 return "ConfigSettings";
+            else if (route === "verify")
+                return "VerifyAccount";
             else return "NotFound";
         });
         return { currentView };
@@ -92,8 +134,14 @@ export default {
             this.sessionActive = false;
         }else{
             this.sessionActive = true;
+            const yipUserData = JSON.parse(localStorage.getItem("yipUserData"));
+            this.verifyAccData.verifiedAccount = parseInt(yipUserData.userData.verified);
+            this.verifyAccData.registrationDate = yipUserData.userData.registrationDate;
+            if(this.verifyAccData.verifiedAccount == 0){
+                this.startCountdown();
+            }
         }
-        console.log("Sesion activa: ", this.sessionActive)
+        console.log("Sesion activa: ", this.sessionActive);
     }
 
 };
@@ -150,4 +198,41 @@ export default {
     z-index: 1;
 }
 
+
+.isVerified{
+    border-radius: 1ch;
+    position: fixed;
+    top: 7ch;
+    padding: 0.5ch;
+    background-color: #FDF5C7;
+    border: 2px solid #d48702;
+    width: 95%;
+    margin-left: calc((5%/2) - 8px);
+}
+
+.isVerified p, .isVerified b{
+    margin: 0;
+    color: #d48702;
+}
+
+.isVerified > p > b:nth-child(1){
+    color: inherit;
+    text-transform: uppercase;
+}
+
+.close-verify{
+    color: #d48702;
+    position: absolute;
+    top: 0.4ch;
+    right: 0.4ch;
+    width: 1ch;
+    height: 1ch;
+    font-size: 3ch;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    rotate: 45deg;
+    cursor: pointer;
+}
 </style>
