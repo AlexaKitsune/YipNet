@@ -352,6 +352,21 @@ def follow_list(target_id):
         return jsonify({"status": "error", "message": str(e)})
     
 
+@app.route('/blocked_list', methods=['GET'])
+@jwt_required()
+def blocked_list():
+    try:
+        current_user_email = get_jwt_identity()
+        user_data = query.get_user_data("email", {"email": current_user_email})
+        user_id = user_data["json"]["message"]["id"]
+
+        response = query.get_my_negative_list(user_id)
+
+        return jsonify(response)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+    
+
 @app.route('/news_feed/<int:my_id>', methods=['GET'])
 def news_feed(my_id):
     try:

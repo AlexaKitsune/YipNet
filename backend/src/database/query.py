@@ -842,6 +842,47 @@ def get_follow_list(target_id):
             cursor.close()
             connection.close()
 
+
+def get_my_negative_list(target_id):
+    try:
+        # Conectar a la base de datos
+        connection = mysql.connector.connect(
+            host=HOST,
+            user=USER,
+            password=PASS,
+            database="yip_net"
+        )
+        cursor = connection.cursor(dictionary=True)
+
+        # Obtener la negativeList del usuario objetivo
+        query = "SELECT negativeList FROM users WHERE id = %s"
+        cursor.execute(query, (target_id,))
+        result = cursor.fetchone()
+        
+        if result and result['negativeList']:
+            negative_list = json.loads(result['negativeList'])
+        else:
+            return json_status(True, 1, {"response": []})
+
+        # Obtener los detalles de cada usuario en la negativeList
+        if negative_list:
+            format_strings = ','.join(['%s'] * len(negative_list))
+            query = f"SELECT id, name, surname, currentProfilePic FROM users WHERE id IN ({format_strings})"
+            cursor.execute(query, tuple(negative_list))
+            data = cursor.fetchall()
+        else:
+            data = []
+
+        return json_status(True, 1, {"response": data})
+
+    except mysql.connector.Error as error:
+        print(f"Error al conectarse a la base de datos: {error}")
+        return json_status(False, 0, "Database connection error.")
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
     
 def manage_block(my_id, target_id, add_):
     try:

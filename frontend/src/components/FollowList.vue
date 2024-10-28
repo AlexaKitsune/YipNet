@@ -1,7 +1,7 @@
 <template>
     <div class="FollowList-MAIN">
 
-        <div>
+        <div data-aos="zoom-in">
 
             <button @click="hideFollowList()">+</button>
 

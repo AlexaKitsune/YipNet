@@ -1,5 +1,5 @@
 <template>
-    <nav>
+    <nav data-aos="fade-down">
 
         <div @click="goToNewsFeed()" class="yip-net-logo">YipNet</div>
         <div></div>

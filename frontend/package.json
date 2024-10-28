@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@hsorby/vue3-katex": "^0.6.0-rc.5",
+    "aos": "^2.3.4",
     "core-js": "^3.8.3",
     "highlight.js": "^11.8.0",
     "katex": "^0.16.8",

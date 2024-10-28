@@ -38,8 +38,8 @@
             </div>
         </div>
 
-        <section class="update-pics" ref="updatePics">
-            <div>
+        <section class="update-pics" ref="updatePics" v-if="updatePicsShow">
+            <div data-aos="zoom-in">
                 <button @click="updatePics(false)">+</button>
                 <p ref="updateWhat"></p>
                 <div class="update-pics-area">
@@ -109,6 +109,7 @@ export default {
             },
             showFollowList: false,
             blockAlert: false,
+            updatePicsShow: false,
         }
     },
 
@@ -157,14 +158,12 @@ export default {
         },
 
         updatePics(show_, pic_){
+            this.updatePicsShow = show_;
             this.imageToUpdate = pic_;
-            this.$refs.updatePics.style.display = show_ == true ? "flex" : "none";
-            this.$refs.updateWhat.textContent = pic_ == "cover" ? "Update cover image" : "Update profile picture";
-            if(show_ == false){
-                this.imageToUpdate = "";
-                this,this.imageFileToUpdate = "";
-                this.$refs.updatePicUpload.className = "SECONDARY-BUTTON";
-            }
+            
+            this.$nextTick(() => {
+                if(show_) this.$refs.updateWhat.textContent = pic_ == "cover" ? "Update cover image" : "Update profile picture";
+            });
         },
 
         handleImageUpload(event) {
@@ -526,6 +525,7 @@ export default {
 
 .update-pics{
     z-index: 2;
+    display: flex;
 }
 
 .block-section{

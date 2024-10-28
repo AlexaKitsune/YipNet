@@ -1,6 +1,6 @@
 <template>
     <section ref="postCreator_MAIN">
-        <div class="postCreator-input">
+        <div class="postCreator-input" data-aos="zoom-in">
 
             <div class="postCreator-title">Create post <button class="post-creator-close-button" @click="switchPostCreator(false)">+</button></div>
             

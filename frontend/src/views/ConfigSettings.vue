@@ -27,15 +27,19 @@
                         <input type="radio" name="gender" value="female" v-model="profileGeneralSettings.gender">Female
                     </label>
                     <label>
-                        <input type="radio" name="gender" value="other" v-model="profileGeneralSettings.gender" ref="otherGenderInput">Other
+                        <input type="radio" name="gender" value="other" :checked="profileGeneralSettings.gender != 'male' && profileGeneralSettings.gender != 'female'" v-model="profileGeneralSettings.gender" ref="otherGenderInput">Other
                     </label>
                 </div>
                 <div v-if="profileGeneralSettings.gender != 'male' && profileGeneralSettings.gender != 'female'">
                     <input type="text" name="customGender" ref="otherGender" placeholder="Custom gender" v-model="customGender">
                 </div>
             </div>
-            <div>Blocked users:
-                {{ userData.postList }}
+            <div><br>Blocked users:<br><br>
+                <div v-for="user in blockedUsersData" :key="user.id" class="blocked-user">
+                    <img :src="`${this.$ENDPOINT}/static/users/${user.id}/${user.currentProfilePic}`" alt="Profile Picture" />
+                    <p>{{ user.name }} {{ user.surname }}</p>
+                    <button class="MAIN-BUTTON" @click="manageBlock(user.id)">Unblock</button>
+                </div>
             </div>
 
             <button class="BIG-BUTTON MAIN-BUTTON" @click="updateProfile()">Update profile</button>
@@ -134,7 +138,7 @@ export default {
     name: 'ConfigSettings',
     data(){
         const userData = JSON.parse(localStorage.getItem("yipUserData")).userData;
-        const customGender = '';
+        const customGender = userData.gender == "male" || userData.gender == "female" ? '' : userData.gender;
         const profileGeneralSettings = {
             name: userData.name,
             surname: userData.surname,
@@ -152,6 +156,7 @@ export default {
             customGender,
             passwordError: {active: false, msg: ""},
             popUpOkUpdates: {active: false, msg: ""},
+            blockedUsersData: [],
         };
     },
 
@@ -231,6 +236,7 @@ export default {
                 if(data.status == "ok"){
                     let yipUserData = JSON.parse(localStorage.getItem('yipUserData'));
                     yipUserData.userData.description = profileGeneralSettingsCopy.description;
+                    yipUserData.userData.gender = currentGender;
                     localStorage.setItem("yipUserData", JSON.stringify(yipUserData));
                     this.popUpOkUpdates.active = true;
                     this.popUpOkUpdates.msg = "Profile updated successfully";
@@ -301,13 +307,81 @@ export default {
             setTimeout(() => {
                 window.location.reload();
             }, 80);
-        }
+        },
+
+        getBlockedList(){
+            const token = JSON.parse(localStorage.getItem("yipUserData")).token;
+            fetch(this.$ENDPOINT+"/blocked_list", {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token // Donde "token" es el token de autorización que deseas enviar
+                }})
+                .then(response => response.json())
+                .then(data => {
+                    console.log("blocked list data", data)
+                    if(data.json.status == "ok"){
+                        this.blockedUsersData = data.json.message.response;
+                    }
+                })
+                .catch(error => {
+                    console.error("Error: ", error);
+                });
+        },
+
+        manageBlock(targetId){
+            const token = JSON.parse(localStorage.getItem("yipUserData")).token;
+            fetch(this.$ENDPOINT+"/manage_block/" + targetId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` // Incluye el token JWT en el encabezado
+                },
+                body: JSON.stringify({
+                    "blockOrUnblock": 0
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                if(data.status == "ok"){
+                    let yipUserData = JSON.parse(localStorage.getItem("yipUserData"));
+                    console.log("unblocked", data.message.target_user);
+
+                    if (yipUserData.userData.negativeList.includes(data.message.target_user)) {
+                        let negativeList;
+                        if (typeof yipUserData.userData.negativeList === "string") {
+                            negativeList = JSON.parse(yipUserData.userData.negativeList);
+                        } else {
+                            negativeList = yipUserData.userData.negativeList;
+                        }
+
+                        console.log(negativeList);
+
+                        // Remover el ID si está presente
+                        const index = negativeList.indexOf(data.message.target_user);
+                        if (index > -1) {
+                            negativeList.splice(index, 1);
+                        }
+
+                        yipUserData.userData.negativeList = negativeList;
+                    }
+
+
+                    localStorage.setItem("yipUserData", JSON.stringify(yipUserData));
+                    this.getBlockedList();
+                }
+            })
+        },
 
     },
     
     beforeCreate(){
         if(JSON.parse(localStorage.getItem("yipUserData"))  == null)
             window.location.hash = "/access";
+    },
+
+    mounted(){
+        this.getBlockedList();
     }
 }
 </script>
@@ -393,6 +467,32 @@ input[type=date]{
 
 .set-gender > div > input{
     width: calc(100% - 2ch);
+}
+
+.blocked-user{
+    display: flex;
+    align-items: center;
+    margin-top: 0.5ch;
+    padding: 0.5ch;
+    background-color: rgb(29, 29, 29);
+    border-radius: 1ch;
+}
+
+.blocked-user img{
+    width: 4ch;
+    height: 4ch;
+    aspect-ratio: 1/1 !important;
+    min-width: 4ch;
+    object-fit: cover;
+    border-radius: 100vw;
+    margin-right: 2ch;
+    overflow: hidden;
+    background-color: rgb(76, 76, 76);
+}
+
+.blocked-user p{
+    width: 76.5vw;
+    margin: 0;
 }
 
 .set-api-not-exists > div, .set-api-exists > div{

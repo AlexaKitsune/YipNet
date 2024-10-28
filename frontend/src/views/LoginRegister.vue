@@ -5,17 +5,17 @@
         <h2>{{ mode.charAt(0).toUpperCase() + mode.slice(1) }}</h2>
         <p :style="`color: ${serverMsg.color};`">{{ serverMsg.content }}</p>
 
-        <section>
+        <section data-aos="fade-up">
             <div><input type="email" placeholder="Email" ref="accessEmail" v-model="accessData.email"></div>
             <div><input type="password" placeholder="Password" ref="accessPassword" v-model="accessData.password"></div>
         </section>
 
-        <section v-if="mode === 'login'">
+        <section v-if="mode === 'login'" data-aos="fade-up">
             <button class="BIG-BUTTON MAIN-BUTTON" @click="login()">Login</button>
             <button class="MIN-BUTTON" @click="switchMode('register')">Register</button>
         </section>
 
-        <section v-if="mode === 'register'">
+        <section v-if="mode === 'register'" data-aos="fade-down">
             <div><input type="text" placeholder="First name" ref="accessFirstName" v-model="accessData.firstName"></div>
             <div><input type="text" placeholder="Last name" ref="accessLastName" v-model="accessData.lastName"></div>
             <div><input type="date" ref="accessDate" v-model="accessData.birthday"></div>

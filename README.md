@@ -44,7 +44,7 @@ py -3 -m venv venv
 # 3. Activate the virtual environment (on Windows):
 venv\Scripts\activate
 
-# 4. nstall the required Python packages from the requirements.txt file:
+# 4. Install the required Python packages from the requirements.txt file:
 pip install -r requirements.txt
 ```
 

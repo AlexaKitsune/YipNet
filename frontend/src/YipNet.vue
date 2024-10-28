@@ -16,7 +16,7 @@
       <div v-if="postCreationActive"><PostCreator id="PostCreator-component-MAIN"/></div>
       <div class="post-creator-launch" @click="switchPostCreator(true)" v-else>✎</div>
     </div>
-    <div class="isVerified" v-if="sessionActive && verifyAccData.verifiedAccount == 0 && verifyAccData.showVerifyAlert">
+    <div class="isVerified" v-if="sessionActive && verifyAccData.verifiedAccount == 0 && verifyAccData.showVerifyAlert" data-aos="fade-up">
         <div class="close-verify" @click="verifyAccData.showVerifyAlert = false">+</div>
         <p>
             <b>A verification email has been sent to your email address.</b><br>
@@ -37,6 +37,8 @@ import NotFound from './views/NotFound.vue';
 import PostCreator from "./components/PostCreator.vue";
 import ConfigSettings from "./views/ConfigSettings.vue";
 import VerifyAccount from './views/VerifyAccount.vue';
+import AOS from 'aos';
+import 'aos/dist/aos.css';
 export default {
     components: {
     NavBar,
@@ -142,6 +144,7 @@ export default {
             }
         }
         console.log("Sesion activa: ", this.sessionActive);
+        AOS.init();
     }
 
 };
