@@ -2,7 +2,7 @@
     <section class="PostRenderer-MAIN">
 
         <div class="PostRenderer-head">
-            <a href=""><img src=""></a>
+            <a href=""><img :src="$ENDPOINT+'/storage/'+postData.current_profile_pic"></a>
             <div>
                 <p><a>{{ postData.name }} {{postData.surname}}</a></p>
                 <p><a>{{ postData.post_date }}</a></p>
@@ -11,9 +11,15 @@
 
         <AlexiconComponent :type="'markdown'" :val="postData.content"/>
 
+        <!-- media -->
+        <AlexiconComponent :type="'masonry'" :media="filteredMedia.multimedia" :colsNum="3" v-if="filteredMedia.multimedia.length > 0"/>
+        <AlexiconComponent :type="'doc'" v-for="(item, index) in filteredMedia.files" :key="index" :src="item" class="PostRenderer-doc"/>
+
+        <!-- votes -->
         <div class="PostRenderer-votes">
         </div>
 
+        <!-- commentbox -->
         <div class="PostRenderer-commentbox">
             <AlexiconComponent :type="'textarea'" @get-val="(val) => commentInputs.text = val" :resize="true" :placeholder="'Comment...'"/>
             <div class="PostRenderer-commentbox-images">
@@ -23,8 +29,8 @@
             </div>
             <div class="PostRenderer-commentbox-buttons">
                 <div class="lucide-icon"><Upload/><input type="file" multiple @change="setFilesPreview()" ref="comment-files-input" accept="image/*"></div>
-                <div class="lucide-icon"><Trash2/></div>
-                <button>Comment</button>
+                <div class="lucide-icon"><Trash2 @click="deleteFiles()"/></div>
+                <button :disabled="commentInputs.text == ''" class="highlighted-btn">Comment</button>
             </div> 
         </div>
 
@@ -49,6 +55,10 @@ export default {
             commentInputs: {
                 text: "",
                 images: []
+            },
+            filteredMedia: {
+                multimedia: [],
+                files: []
             }
         }
     },
@@ -63,7 +73,31 @@ export default {
                 };
             })
             this.commentInputs.images = [...this.commentInputs.images, ...filteredImagesArr];
+        },
+
+        deleteFiles() {
+            const input = this.$refs["comment-files-input"];
+            if (input) {
+                input.value = "";
+                this.commentInputs.images = [];
+            }
+        },
+
+        filterMedia(){
+            for(let i of this.postData.media){
+                if(typeof i != 'string'){ continue; }
+                
+                const format = i.split(".")[i.split(".").length-1].toLowerCase();
+                if(['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'webm'].includes(format)){
+                    this.filteredMedia.multimedia.push(this.$ENDPOINT+'/storage/'+i);
+                }else{
+                    this.filteredMedia.files.push(this.$ENDPOINT+'/storage/'+i);
+                }
+            }
         }
+    },
+    mounted(){
+        this.filterMedia();
     }
 }
 </script>
@@ -101,11 +135,18 @@ export default {
 }
 
 .PostRenderer-head > a{
-    border: 1px solid red;
     display: flex;
     width: 50px;
     aspect-ratio: 1/1;
     border-radius: 100vw;
+    overflow: hidden;
+}
+
+.PostRenderer-head > a > img{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
 }
 
 .PostRenderer-head > div{
@@ -135,6 +176,10 @@ export default {
 .PostRenderer-head > div > p a:hover{
     text-decoration: underline;
     cursor: pointer;
+}
+
+.PostRenderer-MAIN:deep(.AlexiconDoc-MAIN){
+    margin: 1.5ch 0;
 }
 
 /* commentbox */

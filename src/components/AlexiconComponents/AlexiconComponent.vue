@@ -21,6 +21,7 @@
     <AlexiconSearchbar v-if="type == 'searchbar'" :styles="styles" :val="val" :placeholder="placeholder" :disabled="disabled" :bgcolor="bgcolor" @get-switch-menu="(val) => updateSpecificValue(val, 'get-switch-menu')"><slot></slot></AlexiconSearchbar>
     <AlexiconAsidemenu v-if="type == 'asidemenu'" :active="active" :size="size"><slot></slot></AlexiconAsidemenu>
     <AlexiconUniversalLoginRegister v-if="type == 'universalloginregister'" :styles="styles" :serviceName="serviceName" :txtColor="txtColor" :bgImg="bgImg" @activate-session="updateValue"/>
+    <AlexiconMasonry v-if="type == 'masonry'" :media="media" :colsNum="colsNum"/>
 </template>
 
 <script>
@@ -45,6 +46,7 @@ import AlexiconMainpage from './AdvancedComponents/AlexiconMainpage.vue';
 import AlexiconSearchbar from './AdvancedComponents/AlexiconSearchbar.vue';
 import AlexiconAsidemenu from './AdvancedComponents/AlexiconAsidemenu.vue';
 import AlexiconUniversalLoginRegister from './AdvancedComponents/AlexiconUniversalLoginRegister.vue';
+import AlexiconMasonry from './AdvancedComponents/AlexiconMasonry.vue';
 
 export default {
     name: 'AlexiconComponent',
@@ -70,6 +72,7 @@ export default {
         AlexiconSearchbar,
         AlexiconAsidemenu,
         AlexiconUniversalLoginRegister,
+        AlexiconMasonry,
     },
     props:{
         type: String,
@@ -99,6 +102,8 @@ export default {
         txtColor: String,
         bgImg: String,
         highlightBtnColor: String,
+        media: Array,
+        colsNum: Number
     },
     data(){
         const purple = '#7700ff';

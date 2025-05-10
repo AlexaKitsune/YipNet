@@ -16,6 +16,7 @@
                 <h1>{{ userData.name }} {{ userData.surname }}</h1>
                 <div v-if="!editModes.active || editModes.type != 'description'">
                     <p v-if="userData.description">{{ userData.description }}</p>
+                    <p v-else><i class="ProfileUser-no-description">Add description</i></p>
                     <div class="ProfileUser-edit" v-if="AlexiconUserData?.userData?.id == profileId" @click="editModes = { active: true, type: 'description', modified: false}"><SquarePen/></div>
                 </div>
                 <div v-if="editModes.active && editModes.type == 'description'" class="ProfileUser-info-edit-desciption">
@@ -29,7 +30,8 @@
 
             <div class="ProfileUser-follow">
                 <div v-if="AlexiconUserData?.userData?.id != profileId">
-                    <button class="highlighted-btn">Follow</button>
+                    <button class="highlighted-btn" v-if="parseAndCheckIncludes(AlexiconUserData?.userData?.list_positive, profileId) === false" @click="manageFollow('follow')">Follow</button>
+                    <button v-if="parseAndCheckIncludes(AlexiconUserData?.userData?.list_positive, profileId) === true" @click="manageFollow('unfollow')">Unfollow</button>
                     <button>Block</button>
                 </div>
                 <div>
@@ -39,7 +41,7 @@
             </div>
         </div>
 
-        <!-- popup: uodate-pics -->
+        <!-- popup: update-pics -->
         <section class="update-pics" v-if="editModes.active && ['cover', 'pfp'].includes(editModes.type)">
             <div>
                 <div class="ProfileUser-edit" @click="editModes = { active: false, type: ''}"><X/></div>
@@ -54,6 +56,8 @@
                 </div>
             </div>
         </section>
+
+        <br>
         
         <!-- post list -->
         <section v-for="(item, index) in postList" :key="index">
@@ -197,6 +201,57 @@ export default {
             .catch(err => {
                 console.error("Error en la petición:", err);
             });
+        },
+
+        parseAndCheckIncludes(str, toSearch){
+            let arr = [];
+            try {
+                arr = JSON.parse(str);
+            } catch (error) {
+                return 'error';
+            }
+            return arr.includes(parseInt(toSearch));
+        },
+
+        manageFollow(mode){
+            const token = this.AlexiconUserData.token;
+            const targetId = parseInt(this.profileId);
+
+            fetch(`${this.$ENDPOINT}/alexicon/follow`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ targetId, mode })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === "ok") {
+                        let myListPositive = JSON.parse(this.AlexiconUserData.userData.list_positive);
+                        let targetListPositive = this.userData.list_positive_external;
+                        if(mode == "follow"){
+                            if (!myListPositive.includes(targetId)) {
+                                myListPositive.push(targetId);
+                            }
+                            if (!targetListPositive.includes(this.AlexiconUserData.userData.id)) {
+                                targetListPositive.push(this.AlexiconUserData.userData.id);
+                            }
+                        }else
+                        if(mode == "unfollow"){
+                            myListPositive = myListPositive.filter(num => num !== targetId);   
+                            targetListPositive = targetListPositive.filter(num => num !== this.AlexiconUserData.userData.id);
+                        }
+                        this.AlexiconUserData.userData.list_positive = JSON.stringify(myListPositive);
+                        localStorage.setItem("AlexiconUserData", JSON.stringify(this.AlexiconUserData));
+                        this.userData.list_positive_external = targetListPositive;
+                    } else {
+                        console.error("Error:", data.message);
+                    }
+                })
+                .catch(err => {
+                    console.error("Error with the request:", err);
+                });
         },
 
         listPosts(){
@@ -369,6 +424,10 @@ export default {
 
 .ProfileUser-info > div:last-child > div p{
     display: flex;
+}
+
+.ProfileUser-no-description{
+    opacity: 0.5;
 }
 
 /* update-pics */

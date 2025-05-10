@@ -7,6 +7,7 @@
 			<AlexiconComponent :type="'asidemenu'" :active="menuActive" :size="200"></AlexiconComponent>
 			<main class="Alexicon-main">
 
+				<PostCreator v-if="postCreatorActive"/>
 				<ProfileUser v-if="route  == 'profile'"/>
 				<NewsFeed v-if="route == ''"/>
 				
@@ -18,12 +19,14 @@
 
 <script>
 import AlexiconComponent from './AlexiconComponents/AlexiconComponent.vue';
+import PostCreator from './comp/PostCreator.vue';
 import NewsFeed from './views/NewsFeed.vue';
 import ProfileUser from './views/ProfileUser.vue';
 
 export default {
 	components: {
 		AlexiconComponent,
+		PostCreator,
 		NewsFeed,
 		ProfileUser,
 	},
@@ -33,6 +36,7 @@ export default {
 			sessionActive: false,
 			menuActive: false,
 			route: "",
+			postCreatorActive: false,
 		}
 	},
 
