@@ -1,6 +1,6 @@
 <template>
     <!--Basic components-->
-    <AlexiconText v-if="type == 'text'" :styles="styles" :val="val" :placeholder="placeholder" :disabled="disabled" @get-val="updateValue"/>
+    <AlexiconText v-if="type == 'text' || type == 'password'" :type="type" :styles="styles" :val="val" :placeholder="placeholder" :disabled="disabled" @get-val="updateValue"/>
     <AlexiconButton v-if="type == 'button'" :styles="styles" :disabled="disabled"><slot></slot></AlexiconButton>
     <AlexiconRange v-if="type == 'range'" :styles="styles" :disabled="disabled" :step="step" :min="min" :max="max" :val="val" @get-val="updateValue"/>
     <AlexiconCheckbox v-if="type == 'checkbox'" :styles="styles" :disabled="disabled" :checked="checked" @get-val="updateValue"/>
@@ -22,6 +22,7 @@
     <AlexiconAsidemenu v-if="type == 'asidemenu'" :active="active" :size="size"><slot></slot></AlexiconAsidemenu>
     <AlexiconUniversalLoginRegister v-if="type == 'universalloginregister'" :styles="styles" :serviceName="serviceName" :txtColor="txtColor" :bgImg="bgImg" @activate-session="updateValue"/>
     <AlexiconMasonry v-if="type == 'masonry'" :media="media" :colsNum="colsNum"/>
+    <AlexiconEmergent v-if="type == 'emergent'" @close="(val) => updateSpecificValue(val, 'close')" :title="title"><slot></slot></AlexiconEmergent>
 </template>
 
 <script>
@@ -47,6 +48,7 @@ import AlexiconSearchbar from './AdvancedComponents/AlexiconSearchbar.vue';
 import AlexiconAsidemenu from './AdvancedComponents/AlexiconAsidemenu.vue';
 import AlexiconUniversalLoginRegister from './AdvancedComponents/AlexiconUniversalLoginRegister.vue';
 import AlexiconMasonry from './AdvancedComponents/AlexiconMasonry.vue';
+import AlexiconEmergent from './AdvancedComponents/AlexiconEmergent.vue';
 
 export default {
     name: 'AlexiconComponent',
@@ -73,6 +75,7 @@ export default {
         AlexiconAsidemenu,
         AlexiconUniversalLoginRegister,
         AlexiconMasonry,
+        AlexiconEmergent,
     },
     props:{
         type: String,

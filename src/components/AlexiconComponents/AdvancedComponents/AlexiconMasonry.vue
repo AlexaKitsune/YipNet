@@ -4,6 +4,10 @@
         <div class="AlexiconMasonry-col" :style="`width: ${ 100 / colsNum }%;`" v-for="(item, index) in finalArray" :key="index">
             <div v-for="(subItem, subIndex) in item" :key="subIndex">
                 <img :src="subItem" v-if="['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(getFormat(subItem))">
+                <video v-if="['mp4', 'mov', 'webm'].includes(getFormat(subItem))">
+                    <source :src="subItem" :type="`video/${getFormat(subItem)}`">
+                    Your browser does not support the video tag.
+                </video>
             </div>
         </div>
     </main>
@@ -64,7 +68,7 @@ export default {
     display: block;
 }
 
-.AlexiconMasonry-col > div > img{
+.AlexiconMasonry-col > div > img, .AlexiconMasonry-col > div > video{
     display: block;
     width: 100%;
     border-radius: 5px;
@@ -72,7 +76,7 @@ export default {
     margin: 0;
 }
 
-.AlexiconMasonry-col > div > img:hover{
+.AlexiconMasonry-col > div > img:hover, .AlexiconMasonry-col > div > video:hover{
     cursor: pointer;
     filter: brightness(0.8);
     transition: filter 0.2s;

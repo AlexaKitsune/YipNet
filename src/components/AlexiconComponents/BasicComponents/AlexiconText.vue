@@ -1,7 +1,7 @@
 <template>
     <input
         ref="inputText"
-        type="text"
+        :type="type"
         class="AlexiconText-MAIN"
         :placeholder="placeholder"
         :disabled="disabled"
@@ -16,7 +16,8 @@ export default {
         styles: Object,
         val: undefined,
         placeholder: String,
-        disabled: Boolean
+        disabled: Boolean,
+        type: String,
     },
     data(){
         return{
@@ -48,4 +49,7 @@ export default {
 </script>
 
 <style scoped>
+.AlexiconText-MAIN{
+    padding: 5px 3px;
+}
 </style>

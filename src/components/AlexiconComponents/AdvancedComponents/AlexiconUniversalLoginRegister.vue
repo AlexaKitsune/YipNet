@@ -140,8 +140,9 @@ export default {
                 },
                 body: JSON.stringify(userData)
             })
+            .then(res => res.json())
             .then( data => {
-                console.log(data);
+                console.log("data del register", data, data.response);
                 if(data.response == "User added successfully."){
                     this.login();
                 }

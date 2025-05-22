@@ -2,37 +2,39 @@
     <main class="ProfileUser-MAIN">
 
         <div class="ProfileUser-cover">
-            <img :src="`${$ENDPOINT}/storage/${userData.current_cover_pic}`">
+            <img :src="userData?.current_cover_pic == '' || typeof userData?.current_cover_pic == 'object' ? require('../../assets/cover.png') : `${$ENDPOINT}/storage/${userData.current_cover_pic}`" data-aos="zoom-out">
             <div class="ProfileUser-edit" v-if="AlexiconUserData?.userData?.id == profileId" @click="showEditImages('cover')"><SquarePen/></div>
-            <div class="ProfileUser-pfp">
-                <img :src="`${$ENDPOINT}/storage/${userData.current_profile_pic}`">
+            <div class="ProfileUser-pfp" data-aos="zoom-in">
+                <img :src="userData?.current_profile_pic == '' || typeof userData?.current_profile_pic == 'object' ? require('../../assets/pfp.png') : `${$ENDPOINT}/storage/${userData.current_profile_pic}`">
                 <div class="ProfileUser-edit" v-if="AlexiconUserData?.userData?.id == profileId" @click="showEditImages('pfp')"><SquarePen/></div>
             </div>
         </div>
 
         <!-- user info -->
         <div class="ProfileUser-info">
-            <div>
+            <div data-aos="fade-right">
                 <h1>{{ userData.name }} {{ userData.surname }}</h1>
                 <div v-if="!editModes.active || editModes.type != 'description'">
-                    <p v-if="userData.description">{{ userData.description }}</p>
+                    <p v-if="userData.description" ref="ProfileUser-description">{{ userData.description }}</p>
                     <p v-else><i class="ProfileUser-no-description">Add description</i></p>
                     <div class="ProfileUser-edit" v-if="AlexiconUserData?.userData?.id == profileId" @click="editModes = { active: true, type: 'description', modified: false}"><SquarePen/></div>
                 </div>
                 <div v-if="editModes.active && editModes.type == 'description'" class="ProfileUser-info-edit-desciption">
                     <AlexiconComponent :type="'textarea'" @get-val="(val) => { editModes.value = val, editModes.modified = true }" :resize="true" :standalone="true" :maxlength="128" :placeholder="'Edit description...'" :val="userData.description"/>
                     <div>
-                        <button class="highlighted-btn">Save</button>
+                        <button class="highlighted-btn" @click="updateDescription()">Save</button>
                         <button @click="editModes = { active: false, type: '', modified: false }">Cancel</button>
                     </div>
                 </div>
             </div>
 
-            <div class="ProfileUser-follow">
+            <div class="ProfileUser-follow" data-aos="fade-left">
+                <a :href="getFrontURL()+'/chat/'+userData.id"><button><MessageCircleMore/></button></a>
                 <div v-if="AlexiconUserData?.userData?.id != profileId">
-                    <button class="highlighted-btn" v-if="parseAndCheckIncludes(AlexiconUserData?.userData?.list_positive, profileId) === false" @click="manageFollow('follow')">Follow</button>
-                    <button v-if="parseAndCheckIncludes(AlexiconUserData?.userData?.list_positive, profileId) === true" @click="manageFollow('unfollow')">Unfollow</button>
-                    <button>Block</button>
+                    <button class="highlighted-btn" v-if="parseAndCheckIncludes(AlexiconUserData?.userData?.list_positive, profileId) === false" @click="manageFollow('follow')"><UserPlus style="margin-bottom:-4px;"/></button>
+                    <button v-if="parseAndCheckIncludes(AlexiconUserData?.userData?.list_positive, profileId) === true" @click="manageFollow('unfollow')"><UserMinus style="margin-bottom:-4px;"/></button>
+                    <button @click="manageBlock('block')" v-if="parseAndCheckIncludes(AlexiconUserData?.userData?.list_negative, profileId) === false"><Trash2 style="margin-bottom:-4px;"/></button>
+                    <button @click="manageBlock('unblock')" v-else>Unblock</button>
                 </div>
                 <div>
                     <p><b>{{ userData?.list_positive_external?.length || 0 }}</b>&nbsp;Followers</p>
@@ -61,21 +63,23 @@
         
         <!-- post list -->
         <section v-for="(item, index) in postList" :key="index">
-            <PostRenderer :postData="item"/>
+            <PostRenderer :postData="item" :shared="false"/>
         </section>
 
     </main>
 </template>
 
 <script>
-import { SquarePen, X } from 'lucide-vue-next';
+import { SquarePen, X, MessageCircleMore, UserPlus, UserMinus, Trash2 } from 'lucide-vue-next';
 import AlexiconComponent from '../AlexiconComponents/AlexiconComponent.vue';
 import PostRenderer from '../comp/PostRenderer.vue';
+import AOS from 'aos'
+import 'aos/dist/aos.css'
 
 export default {
     name: 'ProfileUser',
     components: {
-        SquarePen, X, AlexiconComponent, PostRenderer
+        SquarePen, X, MessageCircleMore, UserPlus, UserMinus, Trash2, AlexiconComponent, PostRenderer,
     },
     data(){
         return{
@@ -99,6 +103,10 @@ export default {
 			let x = pathArray.shift();
 			this.profileId = pathArray[1];
         },
+
+        getFrontURL(){
+			return window.location.origin;
+		},
 
         getPublicUserData(){
             fetch(`${this.$ENDPOINT}/alexicon/retrieve/?id=${this.profileId}`, {
@@ -213,6 +221,50 @@ export default {
             return arr.includes(parseInt(toSearch));
         },
 
+        updateDescription(){
+            const token = this.AlexiconUserData.token;
+            const myUserData = this.AlexiconUserData.userData;
+
+            const profileData = {
+                name: myUserData.name,
+                surname: myUserData.surname,
+                nickname: myUserData.nickname,
+                at_sign: myUserData.at_sign,
+                gender: myUserData.gender,
+                description: this.editModes.value,
+            };
+
+            fetch(this.$ENDPOINT + '/alexicon/update_profile', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(profileData),
+            })
+            .then(res => res.json())
+            .then(data => {
+                console.log(data)
+                const desc = this.editModes.value;
+                if(data.status == "ok"){
+                    this.AlexiconUserData.userData.description = desc;
+                    localStorage.setItem("AlexiconUserData", JSON.stringify(this.AlexiconUserData));
+                }
+                this.editModes.active = false;
+                this.editModes.value = '';
+                this.editModes.modified = false;
+                this.$nextTick(() => {
+                    this.$refs["ProfileUser-description"].textContent = desc;
+                });
+            })
+            .catch(err => {
+                console.error("Error en la petición:", err);
+                this.editModes.active = false;
+                this.editModes.value = '';
+                this.editModes.modified = false;
+            });
+        },
+
         manageFollow(mode){
             const token = this.AlexiconUserData.token;
             const targetId = parseInt(this.profileId);
@@ -254,6 +306,44 @@ export default {
                 });
         },
 
+        manageBlock(mode){
+            const token = this.AlexiconUserData.token;
+            const targetId = parseInt(this.profileId);
+
+            fetch(`${this.$ENDPOINT}/alexicon/block`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ targetId, mode })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === "ok") {
+                        let myListNegative = JSON.parse(this.AlexiconUserData.userData.list_negative);
+                        if(mode == "block"){
+                            if (!myListNegative.includes(targetId)) {
+                                myListNegative.push(targetId);
+                            }
+                            const path = new URL(window.location.href).pathname;
+                            const newPath = window.location.href.replace(path, "/");
+                            window.location.href = newPath;
+                        }else
+                        if(mode == "unblock"){
+                            myListNegative = myListNegative.filter(num => num !== targetId);   
+                        }
+                        this.AlexiconUserData.userData.list_negative = JSON.stringify(myListNegative);
+                        localStorage.setItem("AlexiconUserData", JSON.stringify(this.AlexiconUserData));
+                    } else {
+                        console.error("Error:", data.message);
+                    }
+                })
+                .catch(err => {
+                    console.error("Error with the request:", err);
+                });
+        },
+
         listPosts(){
             const token = this.AlexiconUserData.token;
             
@@ -277,8 +367,19 @@ export default {
     mounted(){
         this.AlexiconUserData = JSON.parse(localStorage.getItem("AlexiconUserData"));
         this.getProfileId();
+
+        const targetId = parseInt(this.profileId);
+        const myListNegative = JSON.parse(JSON.parse(localStorage.getItem("AlexiconUserData")).userData.list_negative);
+        if(myListNegative.includes(targetId)){
+            const path = new URL(window.location.href).pathname;
+            const newPath = window.location.href.replace(path, "/");
+            window.location.href = newPath;
+        }
+
         this.getPublicUserData();
         this.listPosts();
+
+        AOS.init();
     }
 }
 </script>
@@ -287,6 +388,9 @@ export default {
 .ProfileUser-MAIN{
     display: flex;
     flex-direction: column;
+    border: 1px solid red;
+    max-width: 1080px;
+    margin: 0 auto;
 }
 
 .ProfileUser-cover{
@@ -418,8 +522,8 @@ export default {
     align-items: center;
 }
 
-.ProfileUser-info > div:last-child > div p, .ProfileUser-info > div:last-child > div button{
-    margin-left: 3ch;
+.ProfileUser-info > div:last-child > div p, .ProfileUser-info > div:last-child > div button, .ProfileUser-follow > button{
+    margin-left: 2ch;
 }
 
 .ProfileUser-info > div:last-child > div p{
@@ -428,6 +532,19 @@ export default {
 
 .ProfileUser-no-description{
     opacity: 0.5;
+}
+
+.ProfileUser-follow{
+    display: flex;
+    align-items: center;
+}
+
+.ProfileUser-follow button{
+    min-width: 5ch !important;
+}
+
+.ProfileUser-follow button{
+    height: 4ch !important;
 }
 
 /* update-pics */

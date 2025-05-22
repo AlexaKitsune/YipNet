@@ -43,6 +43,7 @@ export default {
     max-width: 90%;
     margin: 0 auto;
     padding: 0 1ch;
+    max-width: 100vw;
 }
 
 .AlexiconMainpage-MAIN:deep(.Alexicon-main .highlighted-btn){

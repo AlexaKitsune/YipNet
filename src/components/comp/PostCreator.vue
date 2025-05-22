@@ -2,7 +2,7 @@
     <main class="PostCreator-MAIN">
         
         <section>
-            <div class="PostCreator-close" @click="editModes = { active: false, type: ''}"><X/></div>
+            <div class="PostCreator-close" @click="close()"><X/></div>
             <h1>Create post</h1>
             <AlexiconComponent :type="'textarea'" @get-val="(val) => postText = val" :resize="true" :placeholder="'Comment...'" :disabled="uploading"/>
             <div class="PostCreator-images">
@@ -111,8 +111,6 @@ export default {
                 return;
             }
 
-            console.log("TOTAL DE ARCHIVOS A SUBIR:", numFiles)
-
             const token = this.AlexiconUserData.token;
             const targetPath = `yipnet/${this.AlexiconUserData.userData.id}/`;
 
@@ -169,14 +167,18 @@ export default {
             .then(data => {
                 console.log("Post creado:", data);
                 this.uploading = false;
+                this.$emit('close');
             })
             .catch(err => {
                 console.error("Error al crear el post:", err);
                 this.uploading = false;
             });
+        },
+
+        close(){
+            this.editModes = { active: false, type: ''};
+            this.$emit('close');
         }
-
-
     },
     mounted(){
         this.AlexiconUserData = JSON.parse(localStorage.getItem("AlexiconUserData"));

@@ -1,8 +1,8 @@
 <template>
     <div class="AlexiconTextarea-MAIN">
-        <div v-if="!standalone" class="AlexiconTextarea-switch">
+        <label v-if="!standalone" class="AlexiconTextarea-switch">
             <AlexiconSwitch :styles="styles" @get-val="(val) => switchTextareaPreview(val)"/>&nbsp;Preview
-        </div>
+        </label>
         <textarea
             v-if="!previewActive"
             ref="inputTextarea"
@@ -86,6 +86,8 @@ export default {
     display: flex;
     align-items: center;
     height: 30px;
+    width: fit-content;
+    cursor: pointer;
 }
 
 .AlexiconTextarea-MAIN textarea{
