@@ -20,7 +20,7 @@
     <AlexiconMainpage v-if="type == 'mainpage'" :highlightBtnColor="highlightBtnColor"><slot></slot></AlexiconMainpage>
     <AlexiconSearchbar v-if="type == 'searchbar'" :styles="styles" :val="val" :placeholder="placeholder" :disabled="disabled" :bgcolor="bgcolor" @get-switch-menu="(val) => updateSpecificValue(val, 'get-switch-menu')"><slot></slot></AlexiconSearchbar>
     <AlexiconAsidemenu v-if="type == 'asidemenu'" :active="active" :size="size"><slot></slot></AlexiconAsidemenu>
-    <AlexiconUniversalLoginRegister v-if="type == 'universalloginregister'" :styles="styles" :serviceName="serviceName" :txtColor="txtColor" :bgImg="bgImg" @activate-session="updateValue"/>
+    <AlexiconUniversalLoginRegister v-if="type == 'universalloginregister'" :styles="styles" :serviceName="serviceName" :txtColor="txtColor" :bgImg="bgImg" @activate-session="updateValue" @login-register-err="(val) => updateSpecificValue(val, 'login-register-err')"/>
     <AlexiconMasonry v-if="type == 'masonry'" :media="media" :colsNum="colsNum"/>
     <AlexiconEmergent v-if="type == 'emergent'" @close="(val) => updateSpecificValue(val, 'close')" :title="title"><slot></slot></AlexiconEmergent>
 </template>

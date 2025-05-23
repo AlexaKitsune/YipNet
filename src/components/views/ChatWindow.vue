@@ -35,25 +35,26 @@
                     </div>
                 </div>
             </div>
-            <div class="lucide-icon"><Upload/><input type="file" multiple @change="setFilesPreview()" ref="chat-files-input" :disabled="uploading"></div>
+            <div class="lucide-icon"><Paperclip/><input type="file" multiple @change="setFilesPreview()" ref="chat-files-input" :disabled="uploading"></div>
             <div class="lucide-icon" @click="deleteFiles()"><Trash2/></div>
             <div class="ChatWindow-buttons-textarea">
-                <AlexiconComponent :type="'textarea'" @get-val="(val) => postText = val" :resize="true" :placeholder="'Comment...'" :disabled="uploading"/>
+                <AlexiconComponent :type="'textarea'" @get-val="(val) => msgText = val" :resize="true" :placeholder="'Comment...'" :disabled="uploading" :key="keyUpdater"/>
             </div>
-            <button class="highlighted-btn"><Send style="margin-bottom: -6px;"/></button>
+            <button class="highlighted-btn" @click="sendMessage()" :disabled="msgText?.trim() == ''"><Send style="margin-bottom: -6px;"/></button>
         </section>
 
     </main>
 </template>
 
 <script>
-import { Send, Trash2, Upload, } from 'lucide-vue-next';
+import { Send, Trash2, Paperclip, } from 'lucide-vue-next';
 import AlexiconComponent from '../AlexiconComponents/AlexiconComponent.vue';
+import { io } from 'socket.io-client';
 
 export default {
     name: 'ChatWindow',
     components: {
-        Send, Upload, Trash2, AlexiconComponent
+        Send, Paperclip, Trash2, AlexiconComponent
     },
     data(){
         return{
@@ -64,7 +65,9 @@ export default {
                 files: []
             },
             uploading: false,
+            msgText: '',
             uploadedFilesArray: [],
+            keyUpdater: 0,
         }
     },
     methods: {
@@ -133,19 +136,108 @@ export default {
         },
 
         sendMessage(){
-            console.log("send msg")
-            /*fetch('/yipnet/message', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                media,
-                content,
-                targetId,
-                conversationId
-            })*/
+            this.uploading = true;
+            const files = this.filesInput.files.map(item => item.file);
+            const numFiles = files.length;
+
+            if (numFiles === 0) {
+                this.finallySendMessage();
+                return;
+            }
+
+            const token = this.AlexiconUserData.token;
+            const targetPath = `yipnet/${this.AlexiconUserData.userData.id}/`;
+
+            const uploadPromises = Array.from(files).map(file => {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('targetPath', targetPath);
+
+                return fetch(`${this.$ENDPOINT}/alexicon/upload`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                })
+                .then(res => res.json());
+            });
+
+            Promise.all(uploadPromises)
+                .then(results => {
+                    console.log("Todos los archivos subidos:", results);
+                    for(let i of results){
+                        this.uploadedFilesArray.push(i.relativePath);
+                    }
+                    this.finallyPost();
+                })
+                .catch(err => {
+                    console.error("Error al subir uno o más archivos:", err);
+                    alert("Error al subir archivos.");
+                    this.uploading = false;
+                });
+        },
+
+        finallySendMessage(){
+            const token = this.AlexiconUserData.token;
+            fetch(this.$ENDPOINT+"/yipnet/message", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify({
+                    media: this.uploadedFilesArray,
+                    content: this.msgText,
+                    targetId: this.userData.id,
+                    conversationId: 0,
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                console.log("Mensaje enviado:", data);
+                this.uploading = false;
+                this.filesInput.files = [];
+                this.msgText = '';
+                this.uploadedFilesArray = [];
+                this.keyUpdater++;
+            })
+            .catch(err => {
+                console.error("Error al enviar mensaje:", err);
+                this.uploading = false;
+            });
+        },
+
+        checkIfMessages() {
+            if (this.socket) return; // Evitar crear más de una conexión
+
+            this.socket = io(this.$ENDPOINT);
+            this.socket.emit('join', this.AlexiconUserData.userData.id);
+
+            this.socket.on('yipnet_message', () => { this.getMessages(); });
+        },
+
+        getMessages(){
+            const token = this.AlexiconUserData.token;
+            fetch(this.$ENDPOINT + "/yipnet/get_messages?user=" + this.profileId, {
+                method: "GET",
+                headers: {
+                    "Authorization": "Bearer " + token
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "ok") {
+                    console.log("Mensajes recibidos:", data.messages);
+                    // Aquí puedes asignarlos a una variable de Vue
+                    this.messages = data.messages;
+                } else {
+                    console.error("Error en la respuesta:", data.message);
+                }
+            })
+            .catch(error => {
+                console.error("Error en la petición:", error);
+            });
         }
         
     },
@@ -153,6 +245,9 @@ export default {
         this.AlexiconUserData = JSON.parse(localStorage.getItem("AlexiconUserData"));
         this.getProfileId();
         this.getPublicUserData();
+        
+        this.checkIfMessages();
+        this.getMessages();
     }
 }
 </script>

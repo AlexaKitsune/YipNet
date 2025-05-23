@@ -110,7 +110,7 @@ export default {
             })
             .then( data => data.json() )
             .then( data => {
-                console.log(data)
+                console.log("data del login", data)
                 if(data.response == "Correct login."){
                     localStorage.setItem("AlexiconUserData", JSON.stringify({
                         sessionActive: true,
@@ -118,6 +118,8 @@ export default {
                         token: data.access_token
                     }));
                     this.$emit('activate-session', true);
+                }else{
+                    this.$emit('login-register-err', data);
                 }
             })
         },
@@ -145,6 +147,8 @@ export default {
                 console.log("data del register", data, data.response);
                 if(data.response == "User added successfully."){
                     this.login();
+                }else{
+                    this.$emit('login-register-err', data);
                 }
             })
         }

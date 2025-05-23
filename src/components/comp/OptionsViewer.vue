@@ -3,8 +3,8 @@
 
         <section class="OptionsViewer-content">
             <div class="OptionsViewer-options" v-if="mode == ''">
-                <div @click="setMode('report')">Report</div>
-                <div @click="setMode('delete')">Delete</div>
+                <div @click="setMode('report')" v-if="AlexiconUserData?.userData?.id != entityData?.owner_id">Report</div>
+                <div @click="setMode('delete')" v-if="AlexiconUserData?.userData?.id == entityData?.owner_id">Delete</div>
             </div>
             <div class="OptionsViewer-inside" v-else>
                 <MoveLeft @click="setMode('')" style="cursor: pointer;"/>
@@ -19,7 +19,7 @@
                 <br>
                 <div>
                     <button @click="setMode('')">Cancel</button>
-                    <button class="highlighted-btn" @click="perform()">Ok</button>
+                    <button class="highlighted-btn" @click="perform()" :disabled="mode == 'report' && reportContent.trim() == ''">Ok</button>
                 </div>
             </div>
         </section>

@@ -1,6 +1,7 @@
 <template>
 	<main class="YipNet-MAIN">
-	<AlexiconComponent :type="'universalloginregister'" :serviceName="'YipNet'" v-if="!sessionActive" @get-val="() => { sessionActive = true }"/>
+
+	<AlexiconComponent :type="'universalloginregister'" :serviceName="'YipNet'" v-if="!sessionActive" @get-val="() => { sessionActive = true }" @login-register-err="(val) => launchEmergent(val, 'login-register-err')"/>
 	<AlexiconComponent :type="'mainpage'" :highlightBtnColor="'#7701ff'" v-else>
 		<AlexiconComponent :type="'searchbar'" :placeholder="'Search'" @get-switch-menu="(val) => menuActive = val">
 			<a :href="getFrontURL()" class="YipNet-icon-newsfeed"><Newspaper/></a>
@@ -29,6 +30,16 @@
 			</main>
 		</div>
 	</AlexiconComponent>
+
+	<AlexiconComponent v-if="emergent.active" :type="'emergent'" @close="emergent.active = false">
+		<div class="YipNet-emergent">
+			<TriangleAlert v-if="emergent.origin == 'login-register-err'" color="red"/>
+			<p v-if="emergent.origin == 'login-register-err'">{{ emergent?.message?.response }}</p>
+			<button class="highlighted-btn" @click="emergent.active = false">Ok</button>
+			<br>
+		</div>
+	</AlexiconComponent>
+
 	</main>
 </template>
 
@@ -39,7 +50,7 @@ import NewsFeed from './views/NewsFeed.vue';
 import SinglePost from './views/SinglePost.vue';
 import ProfileUser from './views/ProfileUser.vue';
 import SettingsConfig from './views/SettingsConfig.vue';
-import { SquarePen, Newspaper, Settings, Bell } from 'lucide-vue-next';
+import { SquarePen, Newspaper, Settings, Bell, TriangleAlert } from 'lucide-vue-next';
 import NotificationsWindow from './views/NotificationsWindow.vue';
 import ChatWindow from './views/ChatWindow.vue';
 
@@ -57,6 +68,7 @@ export default {
 		Newspaper,
 		Settings,
 		Bell,
+		TriangleAlert,
 	},
 	name: 'YipNet',
 	data(){
@@ -67,6 +79,12 @@ export default {
 			route: "",
 			postCreatorActive: false,
 			notifications: 0,
+			activeEmergent: false,
+			emergent: {
+				active: false,
+				origin: '',
+				message: '',
+			}
 		}
 	},
 
@@ -86,6 +104,12 @@ export default {
 		closePostCreator(){
 			this.postCreatorActive = false;
 		},
+
+		launchEmergent(val_, origin_){
+			this.emergent.active = true;
+			this.emergent.origin = origin_;
+			this.emergent.message = val_;
+		}
 	},
 
 	watch: {
@@ -213,5 +237,12 @@ button{
 	cursor: pointer;
 	scale: 1.1;
 	transition: all 0.1s;
+}
+
+/* emergent */
+.YipNet-emergent{
+	display: flex;
+	flex-direction: column;
+	align-items: center;
 }
 </style>

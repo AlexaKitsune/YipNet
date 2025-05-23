@@ -231,6 +231,10 @@ export default {
     pointer-events: none;
 }
 
+.AlexiconDoc-MAIN > div:first-child > div:last-child{
+    display: flex;
+}
+
 .AlexiconDoc-MAIN .Alexicon-icon-btn{
     margin-left: 3px;
     cursor: pointer;

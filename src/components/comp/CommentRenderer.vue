@@ -148,7 +148,7 @@ export default {
     width: 100%;
     color: light-dark(black, white);
     margin-bottom: 5px;
-    background-color: light-dark(rgba(128,128,128,0.1), rgba(0,0,0,0.1));
+    background-color: light-dark(rgba(128,128,128,0.1), rgba(0,0,0,0.15));
     border-radius: 10px;
     padding: 10px;
 }

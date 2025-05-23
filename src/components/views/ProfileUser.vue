@@ -15,8 +15,8 @@
             <div data-aos="fade-right">
                 <h1>{{ userData.name }} {{ userData.surname }}</h1>
                 <div v-if="!editModes.active || editModes.type != 'description'">
-                    <p v-if="userData.description" ref="ProfileUser-description">{{ userData.description }}</p>
-                    <p v-else><i class="ProfileUser-no-description">Add description</i></p>
+                    <p v-if="userData?.description?.trim() != ''" ref="ProfileUser-description">{{ userData.description }}</p>
+                    <p v-else><i class="ProfileUser-no-description" v-if="AlexiconUserData?.userData?.id == profileId">Add description</i></p>
                     <div class="ProfileUser-edit" v-if="AlexiconUserData?.userData?.id == profileId" @click="editModes = { active: true, type: 'description', modified: false}"><SquarePen/></div>
                 </div>
                 <div v-if="editModes.active && editModes.type == 'description'" class="ProfileUser-info-edit-desciption">
@@ -254,7 +254,9 @@ export default {
                 this.editModes.value = '';
                 this.editModes.modified = false;
                 this.$nextTick(() => {
-                    this.$refs["ProfileUser-description"].textContent = desc;
+                    setTimeout(() => {
+                        this.$refs["ProfileUser-description"].textContent = desc;
+                    }, 100);
                 });
             })
             .catch(err => {
@@ -388,7 +390,6 @@ export default {
 .ProfileUser-MAIN{
     display: flex;
     flex-direction: column;
-    border: 1px solid red;
     max-width: 1080px;
     margin: 0 auto;
 }

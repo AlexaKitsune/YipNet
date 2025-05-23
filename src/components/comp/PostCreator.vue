@@ -24,7 +24,7 @@
                 </div>
             </div>
             <div class="PostCreator-buttons">
-                <div class="lucide-icon"><Upload/><input type="file" multiple @change="setFilesPreview()" ref="post-files-input" :disabled="uploading"></div>
+                <div class="lucide-icon"><Paperclip/><input type="file" multiple @change="setFilesPreview()" ref="post-files-input" :disabled="uploading"></div>
                 <div class="lucide-icon" @click="deleteFiles()"><Trash2/></div>
                 <div>
                     <label>
@@ -45,13 +45,13 @@
 </template>
 
 <script>
-import { Upload, Trash2, X, File, LoaderCircle } from 'lucide-vue-next';
+import { Paperclip, Trash2, X, File, LoaderCircle } from 'lucide-vue-next';
 import AlexiconComponent from '../AlexiconComponents/AlexiconComponent.vue';
 
 export default {
     name: 'PostCreator',
     components: {
-        AlexiconComponent, Upload, Trash2, X, File, LoaderCircle
+        AlexiconComponent, Paperclip, Trash2, X, File, LoaderCircle
     },
     data(){
         return{
@@ -212,7 +212,7 @@ export default {
     max-width: 75vw;
     max-height: 75vh;
     min-height: 25vh;
-    min-width: 30vw;
+    min-width: 50vw;
 }
 
 .PostCreator-MAIN > section > h1{
@@ -328,5 +328,9 @@ export default {
         -webkit-transform: rotate(360deg); 
         transform:rotate(360deg); 
     } 
+}
+
+.PostCreator-MAIN:deep(textarea){
+    max-height: 50vh;
 }
 </style>

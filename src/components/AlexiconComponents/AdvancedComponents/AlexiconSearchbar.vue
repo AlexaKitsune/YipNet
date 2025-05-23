@@ -147,6 +147,7 @@ export default {
 
 .AlexiconSearchbar-spacer{
     height: 40px;
+    opacity: 0;
 }
 
 .AlexiconSearchbar-MAIN > div{

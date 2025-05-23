@@ -191,7 +191,7 @@ label{
 }
 
 .NotificationsWindow-MAIN > div:hover{
-    background-color: light-dark(rgba(256,256,256,0.25), rgba(0,0,0,0.1));
+    background-color: light-dark(rgba(256,256,256,0.25), rgba(0,0,0,0.15));
 }
 
 .NotificationsWindow-MAIN > div a{

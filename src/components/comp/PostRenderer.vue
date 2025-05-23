@@ -76,7 +76,7 @@
                 </div>
             </div>
             <div class="PostRenderer-commentbox-buttons">
-                <div class="lucide-icon"><Upload/><input type="file" multiple @change="setFilesPreview()" ref="comment-files-input" accept="image/*,video/*"></div>
+                <div class="lucide-icon"><Paperclip/><input type="file" multiple @change="setFilesPreview()" ref="comment-files-input" accept="image/*,video/*"></div>
                 <div class="lucide-icon"><Trash2 @click="deleteFiles()"/></div>
                 <button :disabled="commentInputs.text.trim() == ''" class="highlighted-btn" @click="comment()">Comment</button>
             </div> 
@@ -111,7 +111,7 @@
 </template>
 
 <script>
-import { Upload, Trash2, ArrowBigUp, ArrowBigDown, Heart, Forward, UserSearch, Ellipsis, X } from 'lucide-vue-next';
+import { Paperclip, Trash2, ArrowBigUp, ArrowBigDown, Heart, Forward, UserSearch, Ellipsis, X } from 'lucide-vue-next';
 import AlexiconComponent from '../AlexiconComponents/AlexiconComponent.vue';
 import CommentRenderer from './CommentRenderer.vue';
 import PostRenderer from './PostRenderer.vue';
@@ -123,7 +123,7 @@ import 'aos/dist/aos.css'
 export default {
     name: 'PostRenderer',
     components: {
-        AlexiconComponent, CommentRenderer, StatisticsViewer, OptionsViewer, Upload, Trash2, ArrowBigUp, ArrowBigDown, Heart, Forward, UserSearch, Ellipsis, X, PostRenderer
+        AlexiconComponent, CommentRenderer, StatisticsViewer, OptionsViewer, Paperclip, Trash2, ArrowBigUp, ArrowBigDown, Heart, Forward, UserSearch, Ellipsis, X, PostRenderer
     },
     props: {
         postData: Object,
@@ -465,8 +465,11 @@ export default {
     background-color: light-dark(#f2f2f2, #2d2d2d);
     border-radius: 10px;
     padding: 2ch;
-    margin-bottom: 4ch;
     box-shadow: 0 0 2ch rgba(0, 0, 0, 0.2);
+    width: 75ch;
+    max-width: calc(100vw - 6ch);
+    margin: 0 auto;
+    margin-bottom: 4ch;
 }
 
 .lucide-icon{
@@ -551,6 +554,9 @@ export default {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    border-top: 1px solid rgba(128, 128, 128, 0.25);
+    border-bottom: 1px solid rgba(128, 128, 128, 0.25);
+    padding: 5px 0;
 }
 
 .PostRenderer-votes > div{
