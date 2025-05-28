@@ -206,6 +206,8 @@ label{
 .NotificationsWindow-MAIN > div a > img{
     width: 50px;
     aspect-ratio: 1/1;
+    object-fit: cover;
+    object-position: center;
     border-radius: 100vw;
     margin-left: 10px;
     margin-right: 15px;

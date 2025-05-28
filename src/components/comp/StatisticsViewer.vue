@@ -192,6 +192,9 @@ export default{
     width: 50px;
     border-radius: 100vw;
     margin-right: 10px;
+    aspect-ratio: 1/1;
+    object-fit: cover;
+    object-position: center;
 }
 
 .StatisticsViewer-content > div > p{

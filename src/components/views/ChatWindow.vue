@@ -13,7 +13,7 @@
         </section>
 
         <section class="ChatWindow-content">
-            
+            <MessageRenderer v-for="(item, index) in messages" :key="index" :messageData="item"/>
         </section>
 
         <section class="ChatWindow-buttons">
@@ -50,17 +50,19 @@
 import { Send, Trash2, Paperclip, } from 'lucide-vue-next';
 import AlexiconComponent from '../AlexiconComponents/AlexiconComponent.vue';
 import { io } from 'socket.io-client';
+import MessageRenderer from '../comp/MessageRenderer.vue';
 
 export default {
     name: 'ChatWindow',
     components: {
-        Send, Paperclip, Trash2, AlexiconComponent
+        Send, Paperclip, Trash2, AlexiconComponent, MessageRenderer,
     },
     data(){
         return{
             AlexiconUserData: {},
             profileId: 0,
             userData: {},
+            socket: null,
             filesInput: {
                 files: []
             },
@@ -68,6 +70,7 @@ export default {
             msgText: '',
             uploadedFilesArray: [],
             keyUpdater: 0,
+            messages: [],
         }
     },
     methods: {
@@ -169,7 +172,7 @@ export default {
                     for(let i of results){
                         this.uploadedFilesArray.push(i.relativePath);
                     }
-                    this.finallyPost();
+                    this.finallySendMessage();
                 })
                 .catch(err => {
                     console.error("Error al subir uno o más archivos:", err);
@@ -208,15 +211,6 @@ export default {
             });
         },
 
-        checkIfMessages() {
-            if (this.socket) return; // Evitar crear más de una conexión
-
-            this.socket = io(this.$ENDPOINT);
-            this.socket.emit('join', this.AlexiconUserData.userData.id);
-
-            this.socket.on('yipnet_message', () => { this.getMessages(); });
-        },
-
         getMessages(){
             const token = this.AlexiconUserData.token;
             fetch(this.$ENDPOINT + "/yipnet/get_messages?user=" + this.profileId, {
@@ -238,16 +232,34 @@ export default {
             .catch(error => {
                 console.error("Error en la petición:", error);
             });
-        }
-        
+        },
+
+        addMessage(val){
+            console.log(val)
+        },
+
+        checkIfMessages() {
+            if (this.socket) return; // Evitar crear más de una conexión
+
+            this.socket = io(this.$ENDPOINT);
+            this.socket.emit('join', this.AlexiconUserData.userData.id);
+
+            this.socket.on('yipnet_message', (val) => { this.addMessage(val) });
+        },
     },
     mounted(){
         this.AlexiconUserData = JSON.parse(localStorage.getItem("AlexiconUserData"));
         this.getProfileId();
         this.getPublicUserData();
-        
-        this.checkIfMessages();
         this.getMessages();
+        this.checkIfMessages();
+    },
+    beforeUnmount() {
+        if (this.socket) {
+            this.socket.off('yipnet_message'); // Remover listener
+            this.socket.disconnect();            // Cerrar conexión
+            this.socket = null;
+        }
     }
 }
 </script>
@@ -305,6 +317,8 @@ export default {
     height: 100%;
     max-height: 100%;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 /* buttons */

@@ -470,6 +470,7 @@ export default {
     max-width: calc(100vw - 6ch);
     margin: 0 auto;
     margin-bottom: 4ch;
+    overflow-x: hidden;
 }
 
 .lucide-icon{
@@ -732,6 +733,7 @@ export default {
 /* shared */
 .PostRenderer-shared{
     margin: 2ch 0;
+    overflow: hidden;
 }
 
 .PostRenderer-shared:hover{
@@ -746,7 +748,8 @@ export default {
 
 .PostRenderer-shared > a >>> .PostRenderer-MAIN{
     pointer-events: none;
-
+    width: 69ch !important;
+    max-width: calc(100vw - 12ch) !important;
     border-left: 10px solid light-dark(rgba(128, 128, 128, 0.5), rgba(128, 128, 128, 0.25));
 }
 </style>

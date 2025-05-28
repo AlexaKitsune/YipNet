@@ -4,7 +4,7 @@
         <br><br>
         
         <!-- post list -->
-        <section v-for="(item, index) in newsfeedPosts" :key="index">
+        <section v-for="(item, index) in newsfeedPosts" :key="index" style="overflow: hidden;">
             <PostRenderer :postData="item" :shared="false"/>
         </section>
 
