@@ -3,7 +3,7 @@
 
         <section class="ChatWindow-cover">
             <a :href="getFrontURL()+'/profile/'+userData.id">
-                <img :src="userData?.current_profile_pic == '' || typeof userData?.current_profile_pic == 'object' ? require('../../assets/pfp.png') : `${$ENDPOINT}/storage/${userData.current_profile_pic}`">
+                <ImageProtected :mediaId="userData?.current_profile_pic"/>
                 <div>
                     <h2>{{ userData.name }} {{ userData.surname }}</h2>
                     <p>{{ parseAndGetLength(userData?.list_positive_external) }} followers</p>
@@ -12,8 +12,8 @@
             <div><!-- search tools --></div>
         </section>
 
-        <section class="ChatWindow-content">
-            <MessageRenderer v-for="(item, index) in messages" :key="index" :messageData="item"/>
+        <section class="ChatWindow-content" ref="ChatWindowContent">
+            <MessageRenderer v-for="(item, index) in messages" :key="index" :currentUserId="AlexiconUserData?.userData?.id" :messageData="item"/>
         </section>
 
         <section class="ChatWindow-buttons">
@@ -51,16 +51,17 @@ import { Send, Trash2, Paperclip, } from 'lucide-vue-next';
 import AlexiconComponent from '../AlexiconComponents/AlexiconComponent.vue';
 import { io } from 'socket.io-client';
 import MessageRenderer from '../comp/MessageRenderer.vue';
+import ImageProtected from '../comp/ImageProtected.vue';
 
 export default {
     name: 'ChatWindow',
     components: {
-        Send, Paperclip, Trash2, AlexiconComponent, MessageRenderer,
+        Send, Paperclip, Trash2, AlexiconComponent, MessageRenderer, ImageProtected,
     },
     data(){
         return{
             AlexiconUserData: {},
-            profileId: 0,
+            profileId: window.location.href.split("/").pop(),
             userData: {},
             socket: null,
             filesInput: {
@@ -74,24 +75,6 @@ export default {
         }
     },
     methods: {
-        getProfileId(){
-			const path = new URL(window.location.href).pathname;
-			let pathArray = path.split("/");
-			// eslint-disable-next-line
-			let x = pathArray.shift();
-			this.profileId = pathArray[1];
-        },
-
-        getPublicUserData(){
-            fetch(`${this.$ENDPOINT}/alexicon/retrieve/?id=${this.profileId}`, {
-                method: 'GET'
-            })
-            .then(res => res.json())
-            .then(data => {
-                this.userData = data;
-            })
-        },
-
         getFrontURL(){
 			return window.location.origin;
 		},
@@ -128,9 +111,7 @@ export default {
         },
 
         deleteFiles(){
-            if(this.uploading){
-                return;
-            }
+            if(this.uploading) return;
             const input = this.$refs["chat-files-input"];
             if (input) {
                 input.value = "";
@@ -138,104 +119,77 @@ export default {
             }
         },
 
-        sendMessage(){
+        async sendMessage(){
             this.uploading = true;
-            const files = this.filesInput.files.map(item => item.file);
-            const numFiles = files.length;
+            const files = this.filesInput.files.map(i => i.file);
 
-            if (numFiles === 0) {
-                this.finallySendMessage();
-                return;
+            if (!files.length) { await this.finallySendMessage(); return; }
+
+            const targetPath = `yipnet/${this.AlexiconUserData.userData.id}/`;
+            const visibility = this.privatePost ? 'private' : 'public';
+            const CONCURRENCY = 3; // sube de a 3 en paralelo
+
+            const chunks = [];
+            for (let i = 0; i < files.length; i += CONCURRENCY) { chunks.push(files.slice(i, i + CONCURRENCY)); }
+
+            try {
+                const results = [];
+                for (const chunk of chunks) {
+                    const partial = await Promise.all(
+                        chunk.map(file => this.alexicon_UPLOAD(this.$ENDPOINT, this.TOKEN(), { file, targetPath, visibility }))
+                    );
+                    results.push(...partial);
+                }
+
+                for (const r of results) {
+                    if (r?.fileId) this.uploadedFilesArray.push(r.fileId);
+                    else if (Array.isArray(r?.mediaIds)) this.uploadedFilesArray.push(...r.mediaIds);
+                    else if (Array.isArray(r?.files)) this.uploadedFilesArray.push(...r.files.map(x => x.fileId));
+                }
+
+                await this.finallySendMessage();
+            } catch (e) {
+                console.error("Error al subir los archivos", e);
+            } finally {
+                this.uploading = false;
+            }
+        },
+
+        async finallySendMessage(){
+            const data = {
+                media: this.uploadedFilesArray,
+                content: this.msgText,
+                targetId: this.userData.id,
+                conversationId: 0,
             }
 
-            const token = this.AlexiconUserData.token;
-            const targetPath = `yipnet/${this.AlexiconUserData.userData.id}/`;
+            const result = await this.yipnet_MESSAGE(this.$ENDPOINT, this.TOKEN(), data);
 
-            const uploadPromises = Array.from(files).map(file => {
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('targetPath', targetPath);
+            console.log("Mensaje enviado:", result);
+            this.uploading = false;
+            this.filesInput.files = [];
+            this.msgText = '';
+            this.uploadedFilesArray = [];
+            this.keyUpdater++;
 
-                return fetch(`${this.$ENDPOINT}/alexicon/upload`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: formData
-                })
-                .then(res => res.json());
-            });
-
-            Promise.all(uploadPromises)
-                .then(results => {
-                    console.log("Todos los archivos subidos:", results);
-                    for(let i of results){
-                        this.uploadedFilesArray.push(i.relativePath);
-                    }
-                    this.finallySendMessage();
-                })
-                .catch(err => {
-                    console.error("Error al subir uno o más archivos:", err);
-                    alert("Error al subir archivos.");
-                    this.uploading = false;
-                });
+            this.getMessages();
         },
 
-        finallySendMessage(){
-            const token = this.AlexiconUserData.token;
-            fetch(this.$ENDPOINT+"/yipnet/message", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer " + token
-                },
-                body: JSON.stringify({
-                    media: this.uploadedFilesArray,
-                    content: this.msgText,
-                    targetId: this.userData.id,
-                    conversationId: 0,
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                console.log("Mensaje enviado:", data);
-                this.uploading = false;
-                this.filesInput.files = [];
-                this.msgText = '';
-                this.uploadedFilesArray = [];
-                this.keyUpdater++;
-            })
-            .catch(err => {
-                console.error("Error al enviar mensaje:", err);
-                this.uploading = false;
-            });
-        },
-
-        getMessages(){
-            const token = this.AlexiconUserData.token;
-            fetch(this.$ENDPOINT + "/yipnet/get_messages?user=" + this.profileId, {
-                method: "GET",
-                headers: {
-                    "Authorization": "Bearer " + token
+        async getMessages(){
+            //this.messages = [];
+            const result = await this.yipnet_GET_MESSAGES(this.$ENDPOINT, this.TOKEN(), this.profileId);
+            if(result.status == "ok"){
+                console.log("Mensajes recibidos:", result.messages, result.messages[result.messages.length-1].sender_id);
+                if(this.messages.length < 1){
+                    this.messages = result.messages;
+                }else{
+                    this.messages.push(result.messages[result.messages.length-1])
                 }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === "ok") {
-                    console.log("Mensajes recibidos:", data.messages);
-                    // Aquí puedes asignarlos a una variable de Vue
-                    this.messages = data.messages;
-                } else {
-                    console.error("Error en la respuesta:", data.message);
-                }
-            })
-            .catch(error => {
-                console.error("Error en la petición:", error);
-            });
-        },
-
-        addMessage(val){
-            console.log(val)
+            }
+            console.log("this.messages", this.messages)
+            setTimeout(() => {
+                this.$refs.ChatWindowContent.scrollTop = this.$refs.ChatWindowContent.scrollHeight;
+            }, 500);
         },
 
         checkIfMessages() {
@@ -244,13 +198,15 @@ export default {
             this.socket = io(this.$ENDPOINT);
             this.socket.emit('join', this.AlexiconUserData.userData.id);
 
-            this.socket.on('yipnet_message', (val) => { this.addMessage(val) });
+            this.socket.on('yipnet_message', (val) => { this.getMessages(val) });
         },
     },
-    mounted(){
+    async mounted(){
         this.AlexiconUserData = JSON.parse(localStorage.getItem("AlexiconUserData"));
-        this.getProfileId();
-        this.getPublicUserData();
+
+        const result = await this.alexicon_RETRIEVE(this.$ENDPOINT, this.profileId);
+        this.userData = result;
+
         this.getMessages();
         this.checkIfMessages();
     },
@@ -313,7 +269,6 @@ export default {
 /* content */
 .ChatWindow-content{
     height: auto;
-    border: 1px solid red;
     height: 100%;
     max-height: 100%;
     overflow-y: auto;
@@ -329,6 +284,7 @@ export default {
     box-shadow: 0 0 2ch rgba(0, 0, 0, 0.2);
     border-radius: 10px 10px 0 0;
     position: relative;
+    padding-top: 5px;
 }
 
 /* preview files */
@@ -411,7 +367,7 @@ export default {
 .ChatWindow-buttons-textarea{
     width: 100%;
     margin-right: 1.5ch;
-    margin-bottom: 1ch;    
+    margin-bottom: 5px;    
 }
 
 .ChatWindow-buttons-textarea:deep(.AlexiconTextarea-MAIN){

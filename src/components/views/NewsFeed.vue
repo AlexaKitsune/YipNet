@@ -21,40 +21,12 @@ export default{
     },
     data(){
         return{
-            AlexiconUserData: {},
             newsfeedPosts: [],
         }
     },
-    methods: {
-        newsfeed(){
-            const token = this.AlexiconUserData.token;
-
-            fetch(this.$ENDPOINT+"/yipnet/newsfeed", {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                console.log("Newsfeed:", data);
-                this.newsfeedPosts = data.response;
-            })
-            .catch(err => {
-                console.error("Error al recuperar newsfeed:", err);
-            });
-        }
-    },
-    mounted(){
-        this.AlexiconUserData = JSON.parse(localStorage.getItem("AlexiconUserData"));
-        this.newsfeed();
+    async mounted(){
+        const result = await this.yipnet_NEWSFEED(this.$ENDPOINT, this.TOKEN());
+        this.newsfeedPosts = result?.response ?? [];
     }
 }
 </script>
-
-<style scoped>
-.NewsFeed-MAIN{
-
-}
-</style>

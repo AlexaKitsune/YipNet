@@ -14,7 +14,7 @@
     <AlexiconCode v-if="type=='code'" :styles="styles" :val="val"/>
     <AlexiconMarkdown v-if="type=='markdown'" :val="val"/>
     <AlexiconWindow v-if="type=='window'" :styles="styles" :title="title" :initialPosition="initialPosition"><slot></slot></AlexiconWindow>
-    <AlexiconDoc v-if="type=='doc'" :styles="styles" :src="src"/>
+    <AlexiconDoc v-if="type=='doc'" :styles="styles" :val="val"/>
     <AlexiconTextarea v-if="type == 'textarea'" :styles="styles" :val="val" :placeholder="placeholder" :disabled="disabled" :standalone="standalone" :resize="resize" :maxlength="maxlength" @get-val="updateValue"/>
     <!--Advanced components-->
     <AlexiconMainpage v-if="type == 'mainpage'" :highlightBtnColor="highlightBtnColor"><slot></slot></AlexiconMainpage>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    hola
+</body>
+<script>
+
+const $ENDPOINT = "http://localhost:5001";
+const TOKEN = ()=> 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZGVudGl0eSI6ImFsZXhhQGdtYWlsLmNvbSIsImlhdCI6MTc1ODU1ODM4NSwiZXhwIjoxNzU4NjQ0Nzg1fQ.DTbmI01XLpKw1A29y7Xl9rxP30bhytSHiBETjoULLPQ';
+
+//
+
+function parseContentDispositionFilename(cd) {
+  if (!cd) return null;
+  const m = /filename="(.+?)"/i.exec(cd);
+  return m ? m[1] : null;
+}
+
+async function alexicon_MEDIA_FILE(endpoint_, token_=null, id_){
+    const url = `${endpoint_}/alexicon/media/file/${id_}`;
+    const headers = {};
+    if (token_) headers["Authorization"] = `Bearer ${token_}`;
+    
+    const response = await fetch(url, { method: "GET", headers, cache: "no-store" });
+
+    const type = response.headers.get("content-type") || "";
+    const filename =
+        response.headers.get("X-Filename") ||
+        parseContentDispositionFilename(response.headers.get("Content-Disposition"));
+
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+
+    return { url: blobUrl, type, filename, isBlob: true };
+}
+//
+
+(async () => {
+  const file = await alexicon_MEDIA_FILE("http://localhost:5001", "Bearer token123", 2);
+  if (file) {
+    console.log("Archivo:", file.filename, file.type, file.url);
+    // Ejemplo: insertar en el DOM
+    if (file.type.startsWith("image/")) {
+      const img = document.createElement("img");
+      img.src = file.url;
+      document.body.appendChild(img);
+    }
+  }
+})();
+
+
+</script>
+</html>

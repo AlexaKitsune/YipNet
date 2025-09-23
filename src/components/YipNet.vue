@@ -8,10 +8,10 @@
 			<a :href="getFrontURL()+'/settings/'" class="YipNet-icon-settings"><Settings/></a>
 			<a :href="getFrontURL()+'/notifications/'" class="YipNet-icon-notif">
 				<Bell/>
-				<div v-if="notifications > 0">{{ notifications >= 100 ? '99+' : notifications }}</div>
+				<div v-if="notifications-1 > 0">{{ notifications >= 100 ? '99+' : notifications-1 }}</div>
 			</a>
 			<a :href="getFrontURL()+'/profile/'+AlexiconUserData.userData.id" class="YipNet-profile-icon">
-				<img :src="AlexiconUserData?.userData?.current_profile_pic == '' || typeof AlexiconUserData?.userData?.current_profile_pic == 'object' ? require('../assets/pfp.png') : `${$ENDPOINT}/storage/${AlexiconUserData?.userData?.current_profile_pic}`">
+				<ImageProtected :mediaId="AlexiconUserData.userData.current_profile_pic"/>
 			</a>
 		</AlexiconComponent>
 		<div class="Alexicon-container">
@@ -19,10 +19,10 @@
 			<main class="Alexicon-main">
 
 				<div class="YipNet-toggle-post-creator" v-if="!postCreatorActive" @click="postCreatorActive = true" v-show="route != 'chat'"><SquarePen color="#ffffff"/></div>
-				<PostCreator v-else @close="closePostCreator"/>
+				<PostCreator v-else @close="closePostCreator" @update-post="() => profileRefreshTick++"/>
 				<NewsFeed v-if="route == ''"/>
 				<SinglePost v-if="route == 'post'"/>
-				<ProfileUser v-if="route  == 'profile'"/>
+				<ProfileUser v-if="route  == 'profile'" :get-image-url="getImageURL" :refreshTick="profileRefreshTick" />
 				<SettingsConfig v-if="route == 'settings'"/>
 				<NotificationsWindow v-show="route == 'notifications'" @update-notifications="(val) => notifications = val"/>
 				<ChatWindow v-if="route == 'chat'"/>
@@ -53,8 +53,10 @@ import SettingsConfig from './views/SettingsConfig.vue';
 import { SquarePen, Newspaper, Settings, Bell, TriangleAlert } from 'lucide-vue-next';
 import NotificationsWindow from './views/NotificationsWindow.vue';
 import ChatWindow from './views/ChatWindow.vue';
+import ImageProtected from './comp/ImageProtected.vue';
 
 export default {
+	name: 'YipNet',
 	components: {
 		AlexiconComponent,
 		PostCreator,
@@ -69,8 +71,8 @@ export default {
 		Settings,
 		Bell,
 		TriangleAlert,
+		ImageProtected,
 	},
-	name: 'YipNet',
 	data(){
 		return{
 			AlexiconUserData: {},
@@ -84,10 +86,10 @@ export default {
 				active: false,
 				origin: '',
 				message: '',
-			}
+			},
+			profileRefreshTick: 0,
 		}
 	},
-
 	methods: {
 		autoRoutes(){
 			const path = new URL(window.location.href).pathname;
@@ -109,7 +111,7 @@ export default {
 			this.emergent.active = true;
 			this.emergent.origin = origin_;
 			this.emergent.message = val_;
-		}
+		},
 	},
 
 	watch: {

@@ -98,10 +98,8 @@ export default {
         }
     },
     methods: {
-        updateBasicProfile(){
-            const token = this.AlexiconUserData.token;
+        async updateBasicProfile(){
             const b = this.basic;
-
             const profileData = {
                 name: b.name,
                 surname: b.surname,
@@ -115,75 +113,31 @@ export default {
                 return;
             }
 
-            fetch(this.$ENDPOINT + '/alexicon/update_profile', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify(profileData),
-            })
-            .then(res => res.json())
-            .then(data => {
-                console.log(data);
-                if(data.status == "ok"){
-                    this.AlexiconUserData.userData.name = profileData.name;
-                    this.AlexiconUserData.userData.surname = profileData.surname;
-                    this.AlexiconUserData.userData.nickname = profileData.nickname;
-                    this.AlexiconUserData.userData.at_sign = profileData.at_sign;
-                    this.AlexiconUserData.userData.gender = profileData.gender;
-                    localStorage.setItem("AlexiconUserData", JSON.stringify(this.AlexiconUserData));
-                    this.basic.modified = false;
-                }
-            })
-            .catch(err => {
-                console.error("Error en la petición:", err);
-            });
+            const result = await this.alexicon_UPDATE_PROFILE(this.$ENDPOINT, this.TOKEN(), profileData);
+            if(result.status == "ok"){
+                this.AlexiconUserData.userData.name = profileData.name;
+                this.AlexiconUserData.userData.surname = profileData.surname;
+                this.AlexiconUserData.userData.nickname = profileData.nickname;
+                this.AlexiconUserData.userData.at_sign = profileData.at_sign;
+                this.AlexiconUserData.userData.gender = profileData.gender;
+                localStorage.setItem("AlexiconUserData", JSON.stringify(this.AlexiconUserData));
+                this.basic.modified = false;
+            }
         },
 
-        getUsersList(arr){
-            fetch(this.$ENDPOINT+'/alexicon/retrieve_users', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ids: arr })
-            })
-            .then(res => res.json())
-            .then(data => {
-                console.log(data)
-                this.blockedUsers = data
-            });
+        async unblock(id_){
+            const result = await this.alexicon_BLOCK(this.$ENDPOINT, this.TOKEN(), { targetId: id_, mode: "unblock" });
+            if(result.status == "ok"){
+                let list_negative = JSON.parse(this.AlexiconUserData.userData.list_negative);
+                list_negative = list_negative.filter(item => item !== id_);
+                this.AlexiconUserData.userData.list_negative = JSON.stringify(list_negative);
+                localStorage.setItem("AlexiconUserData", JSON.stringify(this.AlexiconUserData));
+                const arr = JSON.parse(this.AlexiconUserData.userData.list_negative);
+                this.blockedUsers = await this.alexicon_RETRIEVE_USERS(this.$ENDPOINT, { ids: arr });
+            }
         },
 
-        unblock(id_){
-            const targetId = id_;
-            const mode = 'unblock';
-
-            const token = this.AlexiconUserData.token;
-            fetch(`${this.$ENDPOINT}/alexicon/block`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({ targetId, mode })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(data.status === "ok") {
-                    let list_negative = JSON.parse(this.AlexiconUserData.userData.list_negative);
-                    list_negative = list_negative.filter(item => item !== id_);
-                    this.AlexiconUserData.userData.list_negative = JSON.stringify(list_negative);
-                    localStorage.setItem("AlexiconUserData", JSON.stringify(this.AlexiconUserData));
-                    const arr = JSON.parse(this.AlexiconUserData.userData.list_negative);
-                    this.getUsersList(arr);
-                }
-            })
-            .catch(err => {
-                console.error("Error with the request:", err);
-            });
-        },
-
-        changePass(){
+        async changePass(){
             const oldPass = this.password.valOldPass;
             const newPass = this.password.valConfirmNewPass;
             const confirmPass = this.password.valNewPass;
@@ -193,33 +147,19 @@ export default {
                 return;
             }
 
-            const token = this.AlexiconUserData.token;
-            fetch(this.$ENDPOINT+"/alexicon/update_pass", {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    oldPass,
-                    newPass
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                console.log("Respuesta del servidor:", data);
-                if (data.status == "ok") {
-                    console.log("Contraseña actualizada con éxito.");
-                    this.password.modified = false;
+            const result = await this.alexicon_UPDATE_PASS(this.$ENDPOINT, this.TOKEN(), { oldPass, newPass });
+            if(result.status == "ok"){
+                console.log("Contraseña actualizada con éxito.");
+                this.password = {
+                    valOldPass: '',
+                    valNewPass: '',
+                    valConfirmNewPass: '',
+                    modified: false,
                 }
-            })
-            .catch(err => {
-                console.error("Error al actualizar contraseña:", err);
-                alert("Ocurrió un error al intentar actualizar la contraseña.");
-            });
+            }
         }
     },
-    mounted(){
+    async mounted(){
         this.AlexiconUserData = JSON.parse(localStorage.getItem("AlexiconUserData"));
         this.basic = {
             name: this.AlexiconUserData.userData.name,
@@ -234,12 +174,18 @@ export default {
         });
 
         const arr = JSON.parse(this.AlexiconUserData.userData.list_negative);
-        this.getUsersList(arr);
+        this.blockedUsers = await this.alexicon_RETRIEVE_USERS(this.$ENDPOINT, { ids: arr });
     }
 }
 </script>
 
 <style scoped>
+.SettingsConfing-MAIN{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 .SettingsConfing-MAIN > section{
     padding: 10px;
     border-radius: 10px;
@@ -249,6 +195,12 @@ export default {
     position: relative;
     display: flex;
     flex-direction: column;
+    width: 75ch;
+    max-width: calc(100vw - 6ch);
+}
+
+h1{
+    max-width: 75vw;
 }
 
 .SettingsConfing-MAIN > section div{

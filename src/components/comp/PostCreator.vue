@@ -113,11 +113,13 @@ export default {
 
             const token = this.AlexiconUserData.token;
             const targetPath = `yipnet/${this.AlexiconUserData.userData.id}/`;
+            const visibility = this.privatePost ? 'private' : 'public';
 
             const uploadPromises = Array.from(files).map(file => {
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('targetPath', targetPath);
+                formData.append('visibility', visibility);
 
                 return fetch(`${this.$ENDPOINT}/alexicon/upload`, {
                     method: 'POST',
@@ -133,7 +135,7 @@ export default {
                 .then(results => {
                     console.log("Todos los archivos subidos:", results);
                     for(let i of results){
-                        this.uploadedFilesArray.push(i.relativePath);
+                        this.uploadedFilesArray.push(i.fileId);
                     }
                     this.finallyPost();
                 })
@@ -144,7 +146,7 @@ export default {
                 });
         },
 
-        finallyPost(){
+        async finallyPost(){
             const newPost = {
                 content: this.postText,
                 media: JSON.stringify(this.uploadedFilesArray),
@@ -152,31 +154,15 @@ export default {
                 privatePost: this.privatePost,
                 nsfwPost: this.nsfwPost
             };
-
-            const token = this.AlexiconUserData.token;
-
-            fetch(this.$ENDPOINT+"/yipnet/post", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer " + token
-                },
-                body: JSON.stringify(newPost)
-            })
-            .then(res => res.json())
-            .then(data => {
-                console.log("Post creado:", data);
-                this.uploading = false;
-                this.$emit('close');
-            })
-            .catch(err => {
-                console.error("Error al crear el post:", err);
-                this.uploading = false;
-            });
+            const result = await this.yipnet_POST(this.$ENDPOINT, this.TOKEN(), newPost);
+            console.log("new post created", result)
+            this.uploading = false;
+            this.$emit('update-post');
+            this.$emit('close');
         },
 
         close(){
-            this.editModes = { active: false, type: ''};
+            this.editModes = { active: false, type: '' };
             this.$emit('close');
         }
     },

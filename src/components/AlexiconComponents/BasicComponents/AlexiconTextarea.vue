@@ -88,6 +88,7 @@ export default {
     height: 30px;
     width: fit-content;
     cursor: pointer;
+    margin-bottom: 5px;
 }
 
 .AlexiconTextarea-MAIN textarea{

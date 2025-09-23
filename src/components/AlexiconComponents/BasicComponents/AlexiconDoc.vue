@@ -67,7 +67,7 @@ export default {
     },
     props:{
         styles: Object,
-        src: String,
+        val: Array,
     },
     data(){
         const openingAsPlain = [
@@ -77,6 +77,7 @@ export default {
             typeDoc: '',
             docContent: '',
             docName: '',
+            src: '',
             preview: false,
             keyUpdater: 0,
             openingAsPlain: openingAsPlain,
@@ -164,8 +165,9 @@ export default {
         },
     },
     mounted() {
-        this.typeDoc = this.doc?.toLowerCase() || this.src.split('.').pop().toLowerCase();
-        this.docName = this.src.split('/').pop();
+        this.typeDoc = this.val.type.split("/")[1];
+        this.docName = this.val.filename;
+        this.src = this.val.url;
         this.docData = {
             "pdf": {icon: FileText, render: undefined},
             "docx": {icon: FileText, render: this.renderDocx},

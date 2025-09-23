@@ -3,13 +3,14 @@
 
         <div class="AlexiconMasonry-col" :style="`width: ${ 100 / colsNum }%;`" v-for="(item, index) in finalArray" :key="index">
             <div v-for="(subItem, subIndex) in item" :key="subIndex">
-                <img :src="subItem" v-if="['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(getFormat(subItem))">
-                <video v-if="['mp4', 'mov', 'webm'].includes(getFormat(subItem))">
-                    <source :src="subItem" :type="`video/${getFormat(subItem)}`">
+                <img :src="subItem.url" v-if="['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(subItem.type.split('/')[1])">
+                <video v-if="['mp4', 'mov', 'webm'].includes(subItem.type.split('/')[1])">
+                    <source :src="subItem.url" :type="subItem.type">
                     Your browser does not support the video tag.
                 </video>
             </div>
         </div>
+
     </main>
 </template>
 
@@ -40,10 +41,6 @@ export default {
                 selector = selector < n - 1 ? selector + 1 : 0;
             }
         },
-
-        getFormat(str_){
-            return str_.split(".")[str_.split(".").length-1];
-        }
     },
     mounted(){
         this.generateArrayColumns();

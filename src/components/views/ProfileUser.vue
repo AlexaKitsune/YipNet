@@ -2,10 +2,10 @@
     <main class="ProfileUser-MAIN">
 
         <div class="ProfileUser-cover">
-            <img :src="userData?.current_cover_pic == '' || typeof userData?.current_cover_pic == 'object' ? require('../../assets/cover.png') : `${$ENDPOINT}/storage/${userData.current_cover_pic}`" data-aos="zoom-out">
+            <ImageProtected :mediaId="userData?.current_cover_pic"/><!--or require('../../assets/cover.png')-->
             <div class="ProfileUser-edit" v-if="AlexiconUserData?.userData?.id == profileId" @click="showEditImages('cover')"><SquarePen/></div>
             <div class="ProfileUser-pfp" data-aos="zoom-in">
-                <img :src="userData?.current_profile_pic == '' || typeof userData?.current_profile_pic == 'object' ? require('../../assets/pfp.png') : `${$ENDPOINT}/storage/${userData.current_profile_pic}`">
+                <ImageProtected :mediaId="userData?.current_profile_pic"/><!--ow require('../../assets/pfp.png')-->
                 <div class="ProfileUser-edit" v-if="AlexiconUserData?.userData?.id == profileId" @click="showEditImages('pfp')"><SquarePen/></div>
             </div>
         </div>
@@ -49,8 +49,10 @@
                 <div class="ProfileUser-edit" @click="editModes = { active: false, type: ''}"><X/></div>
                 <p>Update {{ editModes.type }}</p>
                 <div class="update-pics-area" :class="`ProfileUser-img-prev-${editModes.type}`">
-                    <img :src="editModes.value">
+                    <ImageProtected :mediaId="editModes.value" v-if="!editModes.value.includes('blob')"/>
+                    <img :src="editModes.value" v-else>
                     <input type="file" @change="setImagePreview()" ref="update-pics-input" accept="image/*">
+                    
                 </div>
                 <div>
                     <button class="highlighted-btn" :disabled="!editModes.modified" @click="uploadImage()">Save</button>
@@ -62,9 +64,11 @@
         <br>
         
         <!-- post list -->
+        <div :key="keyUpdater">
         <section v-for="(item, index) in postList" :key="index" style="overflow: hidden;">
             <PostRenderer :postData="item" :shared="false"/>
         </section>
+        </div>
 
     </main>
 </template>
@@ -75,15 +79,19 @@ import AlexiconComponent from '../AlexiconComponents/AlexiconComponent.vue';
 import PostRenderer from '../comp/PostRenderer.vue';
 import AOS from 'aos'
 import 'aos/dist/aos.css'
+import ImageProtected from '../comp/ImageProtected.vue';
 
 export default {
     name: 'ProfileUser',
+    props: {
+        refreshTick: { type: Number, default: 0 }
+    },
     components: {
-        SquarePen, X, MessageCircleMore, UserPlus, UserMinus, Trash2, AlexiconComponent, PostRenderer,
+        SquarePen, X, MessageCircleMore, UserPlus, UserMinus, Trash2, AlexiconComponent, PostRenderer, ImageProtected,
     },
     data(){
         return{
-            profileId: 0,
+            profileId: window.location.href.split("/").pop(),
             userData: {},
             AlexiconUserData: {},
             editModes: {
@@ -92,41 +100,28 @@ export default {
                 value: undefined,
                 modified: false,
             },
-            postList: []
+            postList: [],
+            keyUpdater: 0,
         }
     },
     methods: {
-        getProfileId(){
-			const path = new URL(window.location.href).pathname;
-			let pathArray = path.split("/");
-			// eslint-disable-next-line
-			let x = pathArray.shift();
-			this.profileId = pathArray[1];
-        },
-
         getFrontURL(){
 			return window.location.origin;
 		},
 
-        getPublicUserData(){
-            fetch(`${this.$ENDPOINT}/alexicon/retrieve/?id=${this.profileId}`, {
-                method: 'GET'
-            })
-            .then(res => res.json())
-            .then(data => {
-                this.userData = data;
-                this.userData.list_positive = JSON.parse(data.list_positive);
-                this.userData.list_positive_external = JSON.parse(data.list_positive_external);
-                this.userData.list_negative = JSON.parse(data.list_negative);
-                this.userData.list_negative_external = JSON.parse(data.list_negative_external);
-                console.log("userData", this.userData)
-            })
+        async getPublicUserData(){
+            const result = await this.alexicon_RETRIEVE(this.$ENDPOINT, this.profileId);
+            this.userData = result;
+            this.userData.list_positive = JSON.parse(result.list_positive);
+            this.userData.list_positive_external = JSON.parse(result.list_positive_external);
+            this.userData.list_negative = JSON.parse(result.list_negative);
+            this.userData.list_negative_external = JSON.parse(result.list_negative_external);
         },
 
         showEditImages(type_){
             let src;
-            if(type_ == "cover") src = this.$ENDPOINT + "/storage/" +this.userData.current_cover_pic;
-            if(type_ == "pfp") src = this.$ENDPOINT + "/storage/" +this.userData.current_profile_pic;
+            if(type_ == "cover") src = this.userData.current_cover_pic;
+            if(type_ == "pfp") src = this.userData.current_profile_pic;
             this.editModes.active = true;
             this.editModes.type = type_;
             this.editModes.value = src;
@@ -142,73 +137,32 @@ export default {
             }
         },
 
-        uploadImage(){
-            const input = this.$refs["update-pics-input"];
-            const file = input.files[0];
+        async uploadImage(){
+            const file = this.$refs["update-pics-input"].files[0];
             const targetPath = "yipnet/" + this.AlexiconUserData.userData.id;
-            const token = this.AlexiconUserData.token;
+            const visibility = this.privatePost ? 'private' : 'public';
 
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('targetPath', targetPath);
+            const result = await this.alexicon_UPLOAD(this.$ENDPOINT, this.TOKEN(), { file, targetPath, visibility });
+            if(result.status == "ok"){
+                let pic;
+                if(this.editModes.type == "cover") pic = "cover";
+                if(this.editModes.type == "pfp") pic = "profile";
 
-            fetch(this.$ENDPOINT+"/alexicon/upload", {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                body: formData
-            })
-            .then(res => res.json())
-            .then(data => {
-                console.log("uploadImage", data)
-                console.log("Archivo subido:", data);
-                if(data.status == "ok"){
-                    this.updateImageInDatabase(data.relativePath);
-                }
-            })
-            .catch(err => {
-                console.error("Error al subir archivo:", err);
-            });
-        },
-
-        updateImageInDatabase(imageUrl){
-            const type = this.editModes.type;
-            let picType;
-            if(type == "cover") picType = "cover";
-            if(type == "pfp") picType = "profile";
-            const token = this.AlexiconUserData.token;
-
-            fetch(this.$ENDPOINT + "/alexicon/update_pics", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    pic: picType,  // "profile" o "cover"
-                    url: imageUrl
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === "ok") {
+                const newResult = await this.alexicon_UPDATE_PICS(this.$ENDPOINT, this.TOKEN(), { pic, url: result.fileId });
+                if(newResult.status == "ok"){
                     this.editModes = {
                         active: false,
                         type: '',
                         value: '',
                         modified: false,
                     };
-                    this.AlexiconUserData.userData[`current_${picType}_pic`] = imageUrl;
+                    this.AlexiconUserData.userData[`current_${pic}_pic`] = result.fileId;
                     localStorage.setItem("AlexiconUserData", JSON.stringify(this.AlexiconUserData));
                     if(this.AlexiconUserData?.userData?.id == this.profileId){
-                        this.userData[`current_${picType}_pic`] = imageUrl;
+                        this.userData[`current_${pic}_pic`] = result.fileId;
                     }
                 }
-            })
-            .catch(err => {
-                console.error("Error en la petición:", err);
-            });
+            }
         },
 
         parseAndCheckIncludes(str, toSearch){
@@ -221,154 +175,81 @@ export default {
             return arr.includes(parseInt(toSearch));
         },
 
-        updateDescription(){
-            const token = this.AlexiconUserData.token;
-            const myUserData = this.AlexiconUserData.userData;
+        async updateDescription(){
+            const myUserData = structuredClone(this.AlexiconUserData.userData);
+            myUserData.description = this.editModes.value;
 
-            const profileData = {
-                name: myUserData.name,
-                surname: myUserData.surname,
-                nickname: myUserData.nickname,
-                at_sign: myUserData.at_sign,
-                gender: myUserData.gender,
-                description: this.editModes.value,
-            };
-
-            fetch(this.$ENDPOINT + '/alexicon/update_profile', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify(profileData),
-            })
-            .then(res => res.json())
-            .then(data => {
-                console.log(data)
-                const desc = this.editModes.value;
-                if(data.status == "ok"){
-                    this.AlexiconUserData.userData.description = desc;
-                    localStorage.setItem("AlexiconUserData", JSON.stringify(this.AlexiconUserData));
-                }
-                this.editModes.active = false;
-                this.editModes.value = '';
-                this.editModes.modified = false;
+            const result = await this.alexicon_UPDATE_PROFILE(this.$ENDPOINT, this.TOKEN(), myUserData);
+            if(result.status == "ok"){
+                this.AlexiconUserData.userData.description = this.editModes.value;
+                localStorage.setItem("AlexiconUserData", JSON.stringify(this.AlexiconUserData));
                 this.$nextTick(() => {
                     setTimeout(() => {
-                        this.$refs["ProfileUser-description"].textContent = desc;
+                        this.$refs["ProfileUser-description"].textContent = this.editModes.value;
                     }, 100);
                 });
-            })
-            .catch(err => {
-                console.error("Error en la petición:", err);
-                this.editModes.active = false;
-                this.editModes.value = '';
-                this.editModes.modified = false;
-            });
+            }
+            this.editModes.active = false;
+            this.editModes.value = '';
+            this.editModes.modified = false;
         },
 
-        manageFollow(mode){
-            const token = this.AlexiconUserData.token;
+        async manageFollow(mode){
             const targetId = parseInt(this.profileId);
 
-            fetch(`${this.$ENDPOINT}/alexicon/follow`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ targetId, mode })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === "ok") {
-                        let myListPositive = JSON.parse(this.AlexiconUserData.userData.list_positive);
-                        let targetListPositive = this.userData.list_positive_external;
-                        if(mode == "follow"){
-                            if (!myListPositive.includes(targetId)) {
-                                myListPositive.push(targetId);
-                            }
-                            if (!targetListPositive.includes(this.AlexiconUserData.userData.id)) {
-                                targetListPositive.push(this.AlexiconUserData.userData.id);
-                            }
-                        }else
-                        if(mode == "unfollow"){
-                            myListPositive = myListPositive.filter(num => num !== targetId);   
-                            targetListPositive = targetListPositive.filter(num => num !== this.AlexiconUserData.userData.id);
-                        }
-                        this.AlexiconUserData.userData.list_positive = JSON.stringify(myListPositive);
-                        localStorage.setItem("AlexiconUserData", JSON.stringify(this.AlexiconUserData));
-                        this.userData.list_positive_external = targetListPositive;
-                    } else {
-                        console.error("Error:", data.message);
-                    }
-                })
-                .catch(err => {
-                    console.error("Error with the request:", err);
-                });
-        },
-
-        manageBlock(mode){
-            const token = this.AlexiconUserData.token;
-            const targetId = parseInt(this.profileId);
-
-            fetch(`${this.$ENDPOINT}/alexicon/block`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ targetId, mode })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === "ok") {
-                        let myListNegative = JSON.parse(this.AlexiconUserData.userData.list_negative);
-                        if(mode == "block"){
-                            if (!myListNegative.includes(targetId)) {
-                                myListNegative.push(targetId);
-                            }
-                            const path = new URL(window.location.href).pathname;
-                            const newPath = window.location.href.replace(path, "/");
-                            window.location.href = newPath;
-                        }else
-                        if(mode == "unblock"){
-                            myListNegative = myListNegative.filter(num => num !== targetId);   
-                        }
-                        this.AlexiconUserData.userData.list_negative = JSON.stringify(myListNegative);
-                        localStorage.setItem("AlexiconUserData", JSON.stringify(this.AlexiconUserData));
-                    } else {
-                        console.error("Error:", data.message);
-                    }
-                })
-                .catch(err => {
-                    console.error("Error with the request:", err);
-                });
-        },
-
-        listPosts(){
-            const token = this.AlexiconUserData.token;
+            const result = await this.alexicon_FOLLOW(this.$ENDPOINT, this.TOKEN(), { targetId, mode });
             
-            fetch(this.$ENDPOINT + `/yipnet/list_posts/${this.profileId}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
+            if(result.status == "ok"){
+                let myListPositive = JSON.parse(this.AlexiconUserData.userData.list_positive);
+                let targetListPositive = this.userData.list_positive_external;
+                if(mode == "follow"){
+                    if (!myListPositive.includes(targetId))
+                        myListPositive.push(targetId);
+                    if (!targetListPositive.includes(this.AlexiconUserData.userData.id))
+                        targetListPositive.push(this.AlexiconUserData.userData.id);
+                }else
+                if(mode == "unfollow"){
+                    myListPositive = myListPositive.filter(num => num !== targetId);   
+                    targetListPositive = targetListPositive.filter(num => num !== this.AlexiconUserData.userData.id);
                 }
-            })
-            .then(res => res.json())
-            .then(data => {
-                console.log(data);
-                if(data.status == "ok"){
-                    this.postList = data.post_list;
-                }
-            });
-        }
+                this.AlexiconUserData.userData.list_positive = JSON.stringify(myListPositive);
+                localStorage.setItem("AlexiconUserData", JSON.stringify(this.AlexiconUserData));
+                this.userData.list_positive_external = targetListPositive;
+            }
+        },
 
+        async manageBlock(mode){
+            const targetId = parseInt(this.profileId);
+
+            const result = await this.alexicon_BLOCK(this.$ENDPOINT, this.TOKEN(), { targetId, mode });
+
+            if(result.status == "ok"){
+                let myListNegative = JSON.parse(this.AlexiconUserData.userData.list_negative);
+                if(mode == "block"){
+                    if (!myListNegative.includes(targetId)) {
+                        myListNegative.push(targetId);
+                    }
+                    const path = new URL(window.location.href).pathname;
+                    const newPath = window.location.href.replace(path, "/");
+                    window.location.href = newPath;
+                }else
+                if(mode == "unblock"){
+                    myListNegative = myListNegative.filter(num => num !== targetId);   
+                }
+                this.AlexiconUserData.userData.list_negative = JSON.stringify(myListNegative);
+                localStorage.setItem("AlexiconUserData", JSON.stringify(this.AlexiconUserData));
+            }
+        },
+
+        async listPosts(){
+            const result = await this.yipnet_LIST_POSTS(this.$ENDPOINT, this.TOKEN(), this.profileId);
+            this.postList.unshift(result.post_list[0]); 
+            this.keyUpdater++;
+        }
     },
 
-    mounted(){
+    async mounted(){
         this.AlexiconUserData = JSON.parse(localStorage.getItem("AlexiconUserData"));
-        this.getProfileId();
 
         const targetId = parseInt(this.profileId);
         const myListNegative = JSON.parse(JSON.parse(localStorage.getItem("AlexiconUserData")).userData.list_negative);
@@ -379,10 +260,19 @@ export default {
         }
 
         this.getPublicUserData();
-        this.listPosts();
+        
+        const result = await this.yipnet_LIST_POSTS(this.$ENDPOINT, this.TOKEN(), this.profileId);
+        this.postList = result?.post_list ?? [];
 
         AOS.init();
-    }
+    },
+
+    watch: {
+        refreshTick() {
+            // cada incremento del padre llama a listPosts
+            this.listPosts();
+        }
+    },
 }
 </script>
 
@@ -422,6 +312,7 @@ export default {
     aspect-ratio: 1/1;
     border-radius: 100vw;
     overflow: hidden;
+    background-color: black;
 }
 
 .ProfileUser-pfp > img{
@@ -429,6 +320,7 @@ export default {
     height: 100%;
     display: flex;
     object-fit: cover;
+    scale: 1.1;
 }
 
 .ProfileUser-edit{

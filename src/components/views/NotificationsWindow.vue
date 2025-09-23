@@ -11,7 +11,7 @@
 
             <!-- reaction -->
             <a v-if="item.content.voteType" :href="getFrontURL()+'/post/'+item.content.targetId" :class="`NotificationsWindow-seen-${item.seen}`">
-                <img :src="item.content.user.current_profile_pic == '' || typeof item.content.user.current_profile_pic == 'object' ? require('../../assets/pfp.png') : `${$ENDPOINT}/storage/${item.content.user.current_profile_pic}`">
+                <ImageProtected :mediaId="item?.content?.user?.current_profile_pic"/><!--or require('../../assets/pfp.png')-->
                 <div>
                     <p>{{ item.content.user.name }} reacted '{{ item.content.voteType }}' to your post.</p>
                     <p>{{ item.notif_date }}</p>
@@ -20,7 +20,7 @@
 
             <!-- share -->
             <a v-if="item.content.sharedPostId" :href="getFrontURL()+'/post/'+item.content.sharedPostId" :class="`NotificationsWindow-seen-${item.seen}`">
-                <img :src="item.content.user.current_profile_pic == '' || typeof item.content.user.current_profile_pic == 'object' ? require('../../assets/pfp.png') : `${$ENDPOINT}/storage/${item.content.user.current_profile_pic}`">
+                <ImageProtected :mediaId="item?.content?.user?.current_profile_pic"/><!--or require('../../assets/pfp.png')-->
                 <div>
                     <p>{{ item.content.user.name }} shared your post.</p>
                     <p>{{ item.notif_date }}</p>
@@ -29,7 +29,7 @@
 
             <!-- comment -->
             <a v-if="item.content.commentId" :href="getFrontURL()+'/post/'+item.content.postId+'#CommentRenderer-'+item.content.commentId" :class="`NotificationsWindow-seen-${item.seen}`">
-                <img :src="item.content.user.current_profile_pic == '' || typeof item.content.user.current_profile_pic == 'object' ? require('../../assets/pfp.png') : `${$ENDPOINT}/storage/${item.content.user.current_profile_pic}`">
+                <ImageProtected :mediaId="item?.content?.user?.current_profile_pic"/><!--or require('../../assets/pfp.png')-->
                 <div>
                     <p>{{ item.content.user.name }} commented on your post.</p>
                     <p>{{ item.notif_date }}</p>
@@ -38,12 +38,23 @@
 
             <!-- follow -->
             <a v-if="item.content.follower_id" :href="getFrontURL()+'/profile/'+item.content.follower_id" :class="`NotificationsWindow-seen-${item.seen}`">
-                <img :src="item.content.current_profile_pic == '' || typeof item.content.current_profile_pic == 'object' ? require('../../assets/pfp.png') : `${$ENDPOINT}/storage/${item.content.current_profile_pic}`">
+                <ImageProtected :mediaId="item?.content?.current_profile_pic"/><!--or require('../../assets/pfp.png')-->
                 <div>
                     <p>{{ item.content.name }} follows you.</p>
                     <p>{{ item.notif_date }}</p>
                 </div>
             </a>
+
+            <!-- message -->
+            <a v-if="item.content.messageId" :href="getFrontURL()+'/chat/'+item.content.sender_id" :class="`NotificationsWindow-seen-${item.seen}`">
+                <ImageProtected :mediaId="item?.content?.user?.current_profile_pic"/><!--or require('../../assets/pfp.png')-->
+                <div>
+                    <p>Message from {{ item.content.user.name }}: "{{ item.content.preview }}"</p>
+                    <p>{{ item.notif_date }}</p>
+                </div>
+            </a>
+
+            <!--<pre style="font-size: 1ch;">{{ item }}<hr/></pre>-->
 
         </div>
         
@@ -55,11 +66,12 @@ import AlexiconComponent from '../AlexiconComponents/AlexiconComponent.vue';
 import { io } from 'socket.io-client';
 import AOS from 'aos'
 import 'aos/dist/aos.css'
+import ImageProtected from '../comp/ImageProtected.vue';
 
 export default {
     name: 'NotificantionsWindow',
     components: {
-        AlexiconComponent,
+        AlexiconComponent, ImageProtected,
     },
     data(){
         return{
@@ -86,60 +98,28 @@ export default {
 			return window.location.origin;
 		},
 
-        getNotifications(){
-            const token = this.AlexiconUserData.token;
-            this.processedNotifications = [];
+        async getNotifications(){
+            const result = await this.alexicon_NOTIFICATIONS(this.$ENDPOINT, this.TOKEN());
+            // Reset antes de llenar
+            this.allNotifications = [];
             this.unseenNotifications = 0;
 
-            fetch(this.$ENDPOINT + "/alexicon/notifications", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                console.log(data);
-                for(let i of data.notifications){
-                    if(i.service == 'yipnet' || (i.service == 'alexicon' && i.content.follower_id)){
-                        this.allNotifications.push(i);
-                    }
-                    if(!i.seen){
-                        this.unseenNotifications++;
-                    }
-                }
-                this.processedNotifications = this.allNotifications;
-                this.$emit('update-notifications', this.unseenNotifications);
-            })
-            .catch(err => {
-                console.error("Error de red o servidor:", err);
-            });
+            for(let i of result.notifications){
+                if(i.service == 'yipnet' || (i.service == 'alexicon' && i.content.follower_id))
+                    this.allNotifications.push(i);
+
+                if(!i.seen)
+                    this.unseenNotifications++;
+            }
+
+            this.processedNotifications = this.allNotifications;
+            this.$emit('update-notifications', this.unseenNotifications);
         },
 
-        markAsSeen(id_, seen_){
+        async markAsSeen(id_, seen_){
             if(seen_ === true) return;
-            const token = this.AlexiconUserData.token;
-
-            fetch(this.$ENDPOINT + "/alexicon/notification_seen", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    id: id_
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if(data.status == "ok"){
-                    this.getNotifications();
-                }
-            })
-            .catch(err => {
-                console.error("Error de red o servidor:", err);
-            });
+            const result = await this.alexicon_NOTIFICATION_SEEN(this.$ENDPOINT, this.TOKEN(), { id: id_ });
+            if(result.status == "ok") this.getNotifications();
         },
 
         showHideSeen(mode_){
@@ -181,13 +161,16 @@ label{
     display: flex;
     align-items: center;
     margin-bottom: 30px;
+    width: fit-content;
 }
 
 .NotificationsWindow-MAIN > div{
-    margin-bottom: 10px;
     background-color: light-dark(#f2f2f2, #2d2d2d);
     border-radius: 5px;
     overflow: hidden;
+    max-width: 75ch;
+    margin: 0 auto;
+    margin-bottom: 10px;
 }
 
 .NotificationsWindow-MAIN > div:hover{

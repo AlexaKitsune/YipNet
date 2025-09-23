@@ -1,11 +1,8 @@
 <template>
     <main class="SinglePost-MAIN">
-
         <br>
         <br>
-        
         <PostRenderer v-if="contentLoaded" :postData="content" :shared="false"/>
-
     </main>
 </template>
 
@@ -19,58 +16,19 @@ export default {
     },
     data(){
         return{
-            AlexiconUserData: {},
-            postId: 0,
             content: {},
             contentLoaded: false,
+            postId: window.location.href.split("/").pop(),
         }
     },
 
-    methods: {
-        getPostId(){
-			const path = new URL(window.location.href).pathname;
-			let pathArray = path.split("/");
-			// eslint-disable-next-line
-			let x = pathArray.shift();
-			this.postId = pathArray[1];
-        },
-
-        getSinlgePost(id_){
-            const token = this.AlexiconUserData.token;
-            const headers = {
-                "Content-Type": "application/json"
-            };
-            if (token) {
-                headers["Authorization"] = `Bearer ${token}`;
-            }
-
-            fetch(this.$ENDPOINT+`/yipnet/get_single_post?id=${id_}`, {
-                    method: "GET",
-                    headers: headers
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.response) {
-                        console.error("Error del servidor:", data.response);
-                    } else {
-                        console.log("Post recibido:", data);
-                        this.content = data;
-                        this.$nextTick(() => {
-                            this.contentLoaded = true;
-                        });
-                    }
-                })
-                .catch(err => {
-                    console.error("Error de red o servidor:", err);
-                });
-        }
+    async mounted(){
+        const result = await this.yipnet_GET_SINGLE_POST(this.$ENDPOINT, this.TOKEN(), this.postId);
+        this.content = result || {};
+        this.$nextTick(() => {
+            if(result) this.contentLoaded = true;
+        });
     },
-
-    mounted(){
-        this.AlexiconUserData = JSON.parse(localStorage.getItem("AlexiconUserData"));
-        this.getPostId();
-        this.getSinlgePost(this.postId);
-    }
 }
 </script>
 

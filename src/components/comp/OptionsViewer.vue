@@ -78,74 +78,40 @@ export default {
             this.title = txt;
         },
 
-        perform(){
+        async perform(){
             const id = this.entityData.id;
             const type = this.entityType;
             const mode = this.mode;
-            const token = this.AlexiconUserData.token;
 
-            if(mode == 'delete'){            
-                fetch(this.$ENDPOINT + "/yipnet/delete", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        id,
-                        type,
-                    })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    console.log("Resultado de eliminación:", data);
-                    if (data.status === 'ok') {
-                        this.$nextTick(() => {
-                            try {
-                                const elem = `${type.charAt(0).toUpperCase() + type.slice(1)}Renderer-${id}`;
-                                document.getElementById(elem).remove();
-                            } catch (error) {
-                                console.log("Error updating UI after delete");
-                            }
-                        });
-                        this.close();
-                    } else {
-                        console.warn("Error en la eliminación:", data.message);
-                    }
-                })
-                .catch(err => {
-                    console.error("Error al intentar eliminar:", err);
-                });
+            if(mode == 'delete'){       
+                const result = await this.yipnet_DELETE(this.$ENDPOINT, this.TOKEN(), {id, type });
+                if (result.status === 'ok') {
+                    this.$nextTick(() => {
+                        try {
+                            const elem = `${type.charAt(0).toUpperCase() + type.slice(1)}Renderer-${id}`;
+                            document.getElementById(elem).remove();
+                        } catch (error) {
+                            console.log("Error updating UI after delete");
+                        }
+                    });
+                    this.close();
+                }
             }else
             if(mode == 'report'){
-                fetch(this.$ENDPOINT + "/alexicon/report", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        service: 'yipnet',
-                        type: type,
-                        route: (type == 'post' ? '/post/' : '') + id,
-                        message: this.reportContent,
-                    })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === "ok") {
-                        console.log("Reporte enviado con éxito");
-                        this.close();
-                    } else {
-                        console.warn("Error al enviar el reporte:", data.message);
-                    }
-                })
-                .catch(err => {
-                    console.error("Error de red o servidor:", err);
-                });
-            }
+                const reportData = {
+                    service: 'yipnet',
+                    type,
+                    route: (type == 'post' ? '/post/' : '') + id,
+                    message: this.reportContent,
+                };
 
-        }
+                const result = await this.alexicon_REPORT(this.$ENDPOINT, this.TOKEN(), reportData);
+                if (result.status === "ok") {
+                    console.log("Reporte enviado con éxito");
+                    this.close();
+                }
+            }
+        },
     },
     beforeMount(){
         this.entityType = this.entityData.comment_date ? 'comment' : 'post';

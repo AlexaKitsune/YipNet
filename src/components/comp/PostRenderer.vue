@@ -2,7 +2,9 @@
     <section :class="`PostRenderer-MAIN PostRenderer-${postData.id}`" :id="`PostRenderer-${postData.id}`" data-aos="fade-down">
 
         <div class="PostRenderer-head">
-            <a :href="getFrontURL()+'/profile/'+postDataData.owner_id"><img :src="postDataData?.current_profile_pic == '' || typeof postDataData?.current_profile_pic == 'object' ? require('../../assets/pfp.png') : `${$ENDPOINT}/storage/${postDataData.current_profile_pic}`"></a>
+            <a :href="getFrontURL()+'/profile/'+postDataData.owner_id">
+                <ImageProtected :mediaId="postDataData?.current_profile_pic"/><!--or require('../../assets/pfp.png')-->
+            </a>
             <div>
                 <p><a :href="getFrontURL()+'/profile/'+postDataData.owner_id">{{ postDataData.name }} {{postDataData.surname}}</a></p>
                 <p><a :href="getFrontURL()+'/post/'+postDataData.id">{{ postDataData.post_date }}</a></p>
@@ -12,8 +14,10 @@
         <AlexiconComponent :type="'markdown'" :val="postDataData?.content || ''"/>
 
         <!-- media -->
-        <AlexiconComponent :type="'masonry'" :media="filteredMedia.multimedia" :colsNum="3" v-if="filteredMedia.multimedia.length > 0"/>
-        <AlexiconComponent :type="'doc'" v-for="(item, index) in filteredMedia.files" :key="index" :src="item" class="PostRenderer-doc"/>
+        <AlexiconComponent :type="'masonry'" :media="filteredMedia.multimedia" :colsNum="3" v-if="filteredMedia.multimedia.length > 0" :key="keyUpdater"/>
+        <div v-if="filteredMedia.files.length > 0" :key="keyUpdater">
+            <AlexiconComponent :type="'doc'" v-for="(item, index) in filteredMedia.files" :key="index" :val="item" class="PostRenderer-doc"/>
+        </div>
 
         <!-- post shared -->
         <div class="PostRenderer-shared" v-if="typeof postData.share_id == 'number' && postData.share_id > 0 && sharedData.contentLoaded && !shared">
@@ -119,11 +123,12 @@ import StatisticsViewer from './StatisticsViewer.vue';
 import OptionsViewer from './OptionsViewer.vue';
 import AOS from 'aos'
 import 'aos/dist/aos.css'
+import ImageProtected from './ImageProtected.vue';
 
 export default {
     name: 'PostRenderer',
     components: {
-        AlexiconComponent, CommentRenderer, StatisticsViewer, OptionsViewer, Paperclip, Trash2, ArrowBigUp, ArrowBigDown, Heart, Forward, UserSearch, Ellipsis, X, PostRenderer
+        AlexiconComponent, CommentRenderer, StatisticsViewer, OptionsViewer, Paperclip, Trash2, ArrowBigUp, ArrowBigDown, Heart, Forward, UserSearch, Ellipsis, X, PostRenderer, ImageProtected
     },
     props: {
         postData: Object,
@@ -162,15 +167,50 @@ export default {
         }
     },
     methods: {
-        filterMedia(){
-            for(let i of this.postDataData.media){
-                if(typeof i != 'string'){ continue; }
-                
-                const format = i.split(".")[i.split(".").length-1].toLowerCase();
-                if(['jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'mov', 'webm'].includes(format)){
-                    this.filteredMedia.multimedia.push(this.$ENDPOINT+'/storage/'+i);
-                }else{
-                    this.filteredMedia.files.push(this.$ENDPOINT+'/storage/'+i);
+        cleanupFilteredMediaBlobs() {
+            for (const it of this.filteredMedia.multimedia) {
+                const u = (it && typeof it === 'object') ? it.url : it;
+                if (typeof u === 'string' && u.startsWith('blob:')) URL.revokeObjectURL(u);
+            }
+            for (const it of this.filteredMedia.files) {
+                const u = (it && typeof it === 'object') ? it.url : it;
+                if (typeof u === 'string' && u.startsWith('blob:')) URL.revokeObjectURL(u);
+            }
+        },
+        
+        async filterMedia() {
+            // 1) limpiar blobs de una corrida anterior
+            this.cleanupFilteredMediaBlobs();
+            this.filteredMedia.multimedia = [];
+            this.filteredMedia.files = [];
+
+            // 2) normalizar ids (array o string JSON)
+            let ids = [];
+            const raw = this.postDataData?.media;
+            if (Array.isArray(raw)) ids = raw;
+            else if (typeof raw === 'string' && raw.trim()) {
+                try { ids = JSON.parse(raw); } catch { ids = []; }
+            }
+
+            // filtrar valores no numéricos / nulos
+            ids = ids.filter(id => Number.isFinite(+id));
+
+            if (!ids.length) return;
+
+            // 3) resolver todos con tu helper
+            const endpoint = this.$ENDPOINT;
+            const token = this.TOKEN?.();
+            const results = await Promise.all(
+                ids.map(id => this.alexicon_MEDIA_FILE(endpoint, token, id).catch(() => null))
+            );
+
+            // 4) clasificar por tipo
+            for (const it of results) {
+                if (!it || !it.type) continue;
+                if (it.type.startsWith('image/') || it.type.startsWith('video/')) {
+                    this.filteredMedia.multimedia.push(it);   // { url (blob), type, filename, isBlob:true }
+                } else {
+                    this.filteredMedia.files.push(it);        // docs, audio, pdf, etc.
                 }
             }
         },
@@ -203,9 +243,7 @@ export default {
         },
 
         deleteFiles() {
-            if(this.uploading){
-                return;
-            }
+            if(this.uploading) return;
             const input = this.$refs["comment-files-input"];
             if (input) {
                 input.value = "";
@@ -218,20 +256,19 @@ export default {
             const files = this.commentInputs.media.map(item => item.file);
             const numFiles = files.length;
 
-            if (numFiles === 0) {
-                this.finallyComment();
-                return;
-            }
+            if (numFiles === 0) return this.finallyComment();
 
             console.log("TOTAL DE ARCHIVOS A SUBIR:", numFiles)
 
             const token = this.AlexiconUserData.token;
             const targetPath = `yipnet/${this.AlexiconUserData.userData.id}/`;
+            const visibility = this.privatePost ? 'private' : 'public';
 
             const uploadPromises = Array.from(files).map(file => {
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('targetPath', targetPath);
+                formData.append('visibility', visibility);
 
                 return fetch(`${this.$ENDPOINT}/alexicon/upload`, {
                     method: 'POST',
@@ -247,7 +284,7 @@ export default {
                 .then(results => {
                     console.log("Todos los archivos subidos:", results);
                     for(let i of results){
-                        this.uploadedFilesArray.push(i.relativePath);
+                        this.uploadedFilesArray.push(i.fileId);
                     }
                     this.finallyComment();
                 })
@@ -258,119 +295,70 @@ export default {
                 });
         },
 
-        finallyComment(){
+        async finallyComment(){
             const newComment = {
                 postId: this.postDataData.id,
                 content: this.commentInputs.text,
                 media: this.uploadedFilesArray
             };
 
-            const token = this.AlexiconUserData.token;
-
-            fetch(this.$ENDPOINT + "/yipnet/comment", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(newComment)
-            })
-            .then(res => res.json())
-            .then(data => {
-                console.log("Comentario creado:", data);
-                if(data.status == 'ok'){
-                    this.commentInputs = {
-                        text: "",
-                        media: []
-                    };
-                    this.uploadedFilesArray = [];
-                    this.keyUpdater++;
-                    this.searchNewComment = data.comment_id;
-                    this.listComments();
-                }
-                this.uploading = false;
-            })
-            .catch(err => {
-                console.error("Error al crear el comentario:", err);
-                this.uploading = false;
-                this.searchNewComment = 0;
-            });
-        },
-
-        listComments(){
-            const token = this.AlexiconUserData.token;
-            const postId = this.postDataData.id;
-
-            fetch(`${this.$ENDPOINT}/yipnet/list_comments/${postId}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.response) {
-                    console.error("Error del servidor:", data.response);
-                } else {
-                    this.commentList = data.comment_list;
-                    if(this.autoTargetComment()){
-                        this.$nextTick(() => {
-                            document.getElementById(this.autoTargetComment()).scrollIntoView();
-                        });
-                    }
-                    if(this.searchNewComment == 0) return;
-                    this.$nextTick(() => {
-                        document.getElementById(`CommentRenderer-${this.searchNewComment}`).scrollIntoView();
-                        this.searchNewComment = 0;
-                    });
-                }
-            })
-            .catch(err => {
-                console.error("Error de red o servidor:", err);
-            });
-        },
-
-        vote(voteType){
-            const token = this.AlexiconUserData.token;
-
-            const targetId = this.postDataData.id;
-            const entityType = 'post';
-
-            fetch(this.$ENDPOINT + "/yipnet/vote", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    voteType,
-                    targetId,
-                    entityType
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                console.log("Resultado de la votación:", data);
-                if(data.response != "Vote updated"){ return; }
-                if(data.status == "added"){
-                    if(!this.postDataData[`list_vote_${voteType}`].includes(this.AlexiconUserData.userData.id)){
-                        this.postDataData[`list_vote_${voteType}`].push(this.AlexiconUserData.userData.id);
-                    }
-                }else
-                if(data.status == "removed"){
-                    const index = this.postDataData[`list_vote_${voteType}`].indexOf(this.AlexiconUserData.userData.id);
-                    if(index !== -1){
-                        this.postDataData[`list_vote_${voteType}`].splice(index, 1);
-                    }
-                }
+            const result = await this.yipnet_COMMENT(this.$ENDPOINT, this.TOKEN(), newComment);
+            if(result.status == 'ok'){
+                this.commentInputs = {
+                    text: "",
+                    media: []
+                };
+                this.uploadedFilesArray = [];
                 this.keyUpdater++;
-            })
-            .catch(err => {
-                console.error("Error al enviar la votación:", err);
-            });
+                this.searchNewComment = result.comment_id;
+                this.listComments();
+            }
+            this.uploading = false;
+            this.searchNewComment = 0;
         },
 
-        sharePost(){
+        async listComments(){
+            const result = await this.yipnet_LIST_COMMENTS(this.$ENDPOINT, this.TOKEN(), this.postDataData.id);
+
+            if (result.response) {
+                console.error("Error del servidor:", result.response);
+            } else {
+                this.commentList = result.comment_list;
+                if(this.autoTargetComment()){
+                    this.$nextTick(() => document.getElementById(this.autoTargetComment()).scrollIntoView() );
+                }
+                if(this.searchNewComment == 0) return;
+                this.$nextTick(() => {
+                    document.getElementById(`CommentRenderer-${this.searchNewComment}`).scrollIntoView();
+                    this.searchNewComment = 0;
+                });
+            }
+        },
+
+        async vote(voteType){
+            const voteData = {
+                voteType,
+                targetId: this.postDataData.id,
+                entityType: 'post'
+            };
+
+            const result = await this.yipnet_VOTE(this.$ENDPOINT, this.TOKEN(), voteData);
+
+            console.log("Resultado de la votación:", result);
+            if(result.response != "Vote updated"){ return; }
+            if(result.status == "added"){
+                if(!this.postDataData[`list_vote_${voteType}`].includes(this.AlexiconUserData.userData.id)){
+                    this.postDataData[`list_vote_${voteType}`].push(this.AlexiconUserData.userData.id);
+                }
+            }else
+            if(result.status == "removed"){
+                const index = this.postDataData[`list_vote_${voteType}`].indexOf(this.AlexiconUserData.userData.id);
+                if(index !== -1) this.postDataData[`list_vote_${voteType}`].splice(index, 1);
+            }
+            this.keyUpdater++;
+        },
+
+        async sharePost(){
             const newPost = {
                 content: this.share.val,
                 media: JSON.stringify([]),
@@ -378,58 +366,14 @@ export default {
                 privatePost: this.share.privatePost,
                 nsfwPost: this.share.nsfwPost
             };
-
-            const token = this.AlexiconUserData.token;
-
-            fetch(this.$ENDPOINT+"/yipnet/post", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer " + token
-                },
-                body: JSON.stringify(newPost)
-            })
-            .then(res => res.json())
-            .then(data => {
-                console.log("Post creado:", data);
-                if(data.response == "Post created successfully."){
-                    this.share.active = false;
-                }
-            })
-            .catch(err => {
-                console.error("Error al crear el post:", err);
-                this.uploading = false;
-            });
+            const result = await this.yipnet_POST(this.$ENDPOINT, this.TOKEN(), newPost);
+            if(result.response == "Post created successfully.") this.share.active = false;
         },
 
-        getSinlgePost(id_){
-            const token = this.AlexiconUserData.token;
-            const headers = {
-                "Content-Type": "application/json"
-            };
-            if (token) {
-                headers["Authorization"] = `Bearer ${token}`;
-            }
-
-            fetch(this.$ENDPOINT+`/yipnet/get_single_post?id=${id_}`, {
-                    method: "GET",
-                    headers: headers
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.response) {
-                        console.error("Error del servidor:", data.response);
-                    } else {
-                        console.log("Post recibido:", data);
-                        this.sharedData.content = data;
-                        this.$nextTick(() => {
-                            this.sharedData.contentLoaded = true;
-                        });
-                    }
-                })
-                .catch(err => {
-                    console.error("Error de red o servidor:", err);
-                });
+        async getSinlgePost(id_){
+            const result = await this.yipnet_GET_SINGLE_POST(this.$ENDPOINT, this.TOKEN(), id_);
+            this.sharedData.content = result;
+            this.$nextTick(() => this.sharedData.contentLoaded = true );
         },
 
         autoTargetComment(){
@@ -454,6 +398,19 @@ export default {
 
         if(this.autoTargetComment()){
             this.listComments();
+        }
+    },
+    beforeUnmount() {
+        // liberar blobs al salir
+        this.cleanupFilteredMediaBlobs();
+    },
+    watch: {
+        postData: {
+            deep: true,
+            handler(val){
+                this.postDataData = val || {};
+                this.filterMedia();
+            }
         }
     }
 }

@@ -12,7 +12,7 @@
             <div v-if="mode == 'up'">
                 <div class="StatisticsViewer-render-users" v-for="(item, index) in arrays.up" :key="index">
                     <a :href="getFrontURL()+'/profile/'+item.id">
-                        <img :src="item?.current_profile_pic == '' || typeof item?.current_profile_pic == 'object' ? require('../../assets/pfp.png') : `${$ENDPOINT}/storage/${item.current_profile_pic}`">
+                        <ImageProtected :mediaId="item?.current_profile_pic"/><!--or require('../../assets/pfp.png')-->
                         <p>{{ item.name }} {{ item.surname }}</p>
                     </a>
                 </div>
@@ -54,11 +54,12 @@
 <script>
 import { ArrowBigUp, ArrowBigDown, Heart, Forward } from 'lucide-vue-next';
 import AlexiconComponent from '../AlexiconComponents/AlexiconComponent.vue';
+import ImageProtected from './ImageProtected.vue';
 
 export default{
     name: 'StatisticsViewer',
     components: {
-        AlexiconComponent, ArrowBigUp, ArrowBigDown, Heart, Forward
+        AlexiconComponent, ArrowBigUp, ArrowBigDown, Heart, Forward, ImageProtected
     },
     props: {
         entityData: Object
@@ -85,36 +86,6 @@ export default{
 			return window.location.origin;
 		},
 
-        getUsersList(arr, destiny){
-            fetch(this.$ENDPOINT+'/alexicon/retrieve_users', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ids: arr })
-            })
-            .then(res => res.json())
-            .then(data => {
-                console.log(data)
-                this.arrays[destiny] = data;
-            });
-        },
-
-        getPostsList(arr, destiny){
-            const token = this.AlexiconUserData.token;
-            fetch(this.$ENDPOINT+'/yipnet/retrieve_posts', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ ids: arr })
-            })
-            .then(res => res.json())
-            .then(data => {
-                console.log(data)
-                this.arrays[destiny] = data;
-            });
-        },
-
         setMode(mode_){
             this.mode = mode_;
             const num = this.arrays[mode_].length;
@@ -126,12 +97,13 @@ export default{
             this.title = `${txt} ${num}`;
         }
     },
-    mounted(){
+    async mounted(){
         this.AlexiconUserData = JSON.parse(localStorage.getItem("AlexiconUserData"));
-        this.getUsersList(this.entityData.list_vote_up, 'up');
-        this.getUsersList(this.entityData.list_vote_down, 'down');
-        this.getUsersList(this.entityData.list_vote_heart, 'heart');
-        this.getPostsList(this.entityData.shared_by_list, 'share');
+
+        this.arrays['up'] = await this.alexicon_RETRIEVE_USERS(this.$ENDPOINT, { ids: this.entityData.list_vote_up });
+        this.arrays['down'] = await this.alexicon_RETRIEVE_USERS(this.$ENDPOINT, { ids: this.entityData.list_vote_down });
+        this.arrays['heart'] = await this.alexicon_RETRIEVE_USERS(this.$ENDPOINT, { ids: this.entityData.list_vote_heart });
+        this.arrays['share'] = await this.alexicon_RETRIEVE_POSTS(this.$ENDPOINT, { ids: this.entityData.shared_by_list });
         
         this.$nextTick(() => {
             setTimeout(() => {
