@@ -15,7 +15,10 @@
 			</a>
 		</AlexiconComponent>
 		<div class="Alexicon-container">
-			<AlexiconComponent :type="'asidemenu'" :active="menuActive" :size="200"></AlexiconComponent>
+			<AlexiconComponent :type="'asidemenu'" :active="menuActive" :size="200">
+				<button class="log-out"><LogOut/> &nbsp; Log out</button>
+				<MessageListing/>
+			</AlexiconComponent>
 			<main class="Alexicon-main">
 
 				<div class="YipNet-toggle-post-creator" v-if="!postCreatorActive" @click="postCreatorActive = true" v-show="route != 'chat'"><SquarePen color="#ffffff"/></div>
@@ -24,8 +27,8 @@
 				<SinglePost v-if="route == 'post'"/>
 				<ProfileUser v-if="route  == 'profile'" :get-image-url="getImageURL" :refreshTick="profileRefreshTick" />
 				<SettingsConfig v-if="route == 'settings'"/>
-				<NotificationsWindow v-show="route == 'notifications'" @update-notifications="(val) => notifications = val"/>
-				<ChatWindow v-if="route == 'chat'"/>
+				<NotificationsWindow v-show="route == 'notifications'" @update-notifications="(val) => notifications = val" @update-chat-window="(val) => chatUpdater = val"/>
+				<ChatWindow v-if="route == 'chat'" :chatUpdater="chatUpdater"/>
 				
 			</main>
 		</div>
@@ -50,10 +53,11 @@ import NewsFeed from './views/NewsFeed.vue';
 import SinglePost from './views/SinglePost.vue';
 import ProfileUser from './views/ProfileUser.vue';
 import SettingsConfig from './views/SettingsConfig.vue';
-import { SquarePen, Newspaper, Settings, Bell, TriangleAlert } from 'lucide-vue-next';
+import { SquarePen, Newspaper, Settings, Bell, TriangleAlert, LogOut } from 'lucide-vue-next';
 import NotificationsWindow from './views/NotificationsWindow.vue';
 import ChatWindow from './views/ChatWindow.vue';
 import ImageProtected from './comp/ImageProtected.vue';
+import MessageListing from './comp/MessageListing.vue';
 
 export default {
 	name: 'YipNet',
@@ -71,7 +75,9 @@ export default {
 		Settings,
 		Bell,
 		TriangleAlert,
+		LogOut,
 		ImageProtected,
+		MessageListing,
 	},
 	data(){
 		return{
@@ -88,6 +94,7 @@ export default {
 				message: '',
 			},
 			profileRefreshTick: 0,
+			chatUpdater: {}
 		}
 	},
 	methods: {
@@ -239,6 +246,15 @@ button{
 	cursor: pointer;
 	scale: 1.1;
 	transition: all 0.1s;
+}
+
+.log-out{
+	width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: transparent;
+	padding: 10px 0;
 }
 
 /* emergent */

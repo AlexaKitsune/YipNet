@@ -9,8 +9,17 @@
 
         <div v-for="(item, index) in processedNotifications" :key="index" data-aos="fade-left" @click.stop="markAsSeen(item.id, item.seen)">
 
-            <!-- reaction -->
-            <a v-if="item.content.voteType" :href="getFrontURL()+'/post/'+item.content.targetId" :class="`NotificationsWindow-seen-${item.seen}`">
+            <!-- reaction message -->
+            <a v-if="item.content.voteType && item.content.entityType == 'message'" :href="getFrontURL()+'/chat/'+item.content.user.id+'#MessageRenderer'+item.content.targetId" :class="`NotificationsWindow-seen-${item.seen}`">
+                <ImageProtected :mediaId="item?.content?.user?.current_profile_pic"/><!--or require('../../assets/pfp.png')-->
+                <div>
+                    <p>{{ item.content.user.name }} reacted '{{ item.content.voteType }}' to your message.</p>
+                    <p>{{ item.notif_date }}</p>
+                </div>
+            </a>
+
+            <!-- reaction post -->
+            <a v-if="item.content.voteType && item.content.entityType != 'message'" :href="getFrontURL()+'/post/'+item.content.targetId" :class="`NotificationsWindow-seen-${item.seen}`">
                 <ImageProtected :mediaId="item?.content?.user?.current_profile_pic"/><!--or require('../../assets/pfp.png')-->
                 <div>
                     <p>{{ item.content.user.name }} reacted '{{ item.content.voteType }}' to your post.</p>
@@ -54,7 +63,7 @@
                 </div>
             </a>
 
-            <!--<pre style="font-size: 1ch;">{{ item }}<hr/></pre>-->
+            <pre style="font-size: 1ch;">{{ item }}<hr/></pre>
 
         </div>
         
@@ -107,10 +116,12 @@ export default {
             for(let i of result.notifications){
                 if(i.service == 'yipnet' || (i.service == 'alexicon' && i.content.follower_id))
                     this.allNotifications.push(i);
-
                 if(!i.seen)
                     this.unseenNotifications++;
             }
+
+            const r = result.notifications[0];
+            if(r.service == 'yipnet' && r.content.entityType == 'message') this.$emit('update-chat-window', { userId: r.content.user.id, msgId: r.content.targetId });
 
             this.processedNotifications = this.allNotifications;
             this.$emit('update-notifications', this.unseenNotifications);

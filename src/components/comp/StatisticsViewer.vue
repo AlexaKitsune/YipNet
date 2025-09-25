@@ -5,7 +5,7 @@
             <div :style="`width: ${entityData.comment_date ? 33.3 : 25}%;`" :class="`StatisticsViewer-btn-${mode == 'up'}`" @click="setMode('up')"><ArrowBigUp/></div>
             <div :style="`width: ${entityData.comment_date ? 33.3 : 25}%;`" :class="`StatisticsViewer-btn-${mode == 'down'}`" @click="setMode('down')"><ArrowBigDown/></div>
             <div :style="`width: ${entityData.comment_date ? 33.3 : 25}%;`" :class="`StatisticsViewer-btn-${mode == 'heart'}`" @click="setMode('heart')"><Heart style="scale:0.8;"/></div>
-            <div :style="`width: ${entityData.comment_date ? 33.3 : 25}%;`" :class="`StatisticsViewer-btn-${mode == 'share'}`" @click="setMode('share')" v-if="!entityData.comment_date"><Forward/></div>
+            <div :style="`width: ${entityData.comment_date ? 33.3 : 25}%;`" :class="`StatisticsViewer-btn-${mode == 'share'}`" @click="setMode('share')" v-if="!entityData.comment_date && (entityData.conversation_id == undefined)"><Forward/></div>
         </div>
         
         <section class="StatisticsViewer-content">
@@ -21,7 +21,7 @@
             <div v-if="mode == 'down'">
                 <div class="StatisticsViewer-render-users" v-for="(item, index) in arrays.down" :key="index">
                     <a :href="getFrontURL()+'/profile/'+item.id">
-                        <img :src="item?.current_profile_pic == '' || typeof item?.current_profile_pic == 'object' ? require('../../assets/pfp.png') : `${$ENDPOINT}/storage/${item.current_profile_pic}`">
+                        <ImageProtected :mediaId="item?.current_profile_pic"/><!--or require('../../assets/pfp.png')-->
                         <p>{{ item.name }} {{ item.surname }}</p>
                     </a>
                 </div>
@@ -30,7 +30,7 @@
             <div v-if="mode == 'heart'">
                 <div class="StatisticsViewer-render-users" v-for="(item, index) in arrays.heart" :key="index">
                     <a :href="getFrontURL()+'/profile/'+item.id">
-                        <img :src="item?.current_profile_pic == '' || typeof item?.current_profile_pic == 'object' ? require('../../assets/pfp.png') : `${$ENDPOINT}/storage/${item.current_profile_pic}`">
+                        <ImageProtected :mediaId="item?.current_profile_pic"/><!--or require('../../assets/pfp.png')-->
                         <p>{{ item.name }} {{ item.surname }}</p>
                     </a>
                 </div>
@@ -39,7 +39,7 @@
             <div v-if="mode == 'share' && !entityData.comment_date">
                 <div class="StatisticsViewer-render-users" v-for="(item, index) in arrays.share" :key="index">
                     <a :href="getFrontURL()+'/post/'+item.id">
-                        <img :src="item?.current_profile_pic == '' || typeof item?.current_profile_pic == 'object' ? require('../../assets/pfp.png') : `${$ENDPOINT}/storage/${item.current_profile_pic}`">
+                        <ImageProtected :mediaId="item?.current_profile_pic"/><!--or require('../../assets/pfp.png')-->
                         <p>{{ item.name }} {{ item.surname }}</p>
                     </a>
                 </div>
@@ -62,7 +62,7 @@ export default{
         AlexiconComponent, ArrowBigUp, ArrowBigDown, Heart, Forward, ImageProtected
     },
     props: {
-        entityData: Object
+        entityData: Object,
     },
     data(){
         return{
@@ -94,16 +94,22 @@ export default{
             if(mode_ == 'down') txt = "Down votes";
             if(mode_ == 'heart') txt = "Heart reactions";
             if(mode_ == 'share') txt = "Shares";
-            this.title = `${txt} ${num}`;
+            this.title = `${txt} ${num == undefined ? 0 : num}`;
         }
     },
     async mounted(){
         this.AlexiconUserData = JSON.parse(localStorage.getItem("AlexiconUserData"));
+        const vUp = this.entityData.list_vote_up;
+        const vDown = this.entityData.list_vote_down;
+        const vHeart = this.entityData.list_vote_heart;
+        const vList = this.entityData.list_vote_shared_by_list;
 
-        this.arrays['up'] = await this.alexicon_RETRIEVE_USERS(this.$ENDPOINT, { ids: this.entityData.list_vote_up });
-        this.arrays['down'] = await this.alexicon_RETRIEVE_USERS(this.$ENDPOINT, { ids: this.entityData.list_vote_down });
-        this.arrays['heart'] = await this.alexicon_RETRIEVE_USERS(this.$ENDPOINT, { ids: this.entityData.list_vote_heart });
-        this.arrays['share'] = await this.alexicon_RETRIEVE_POSTS(this.$ENDPOINT, { ids: this.entityData.shared_by_list });
+        console.log(vUp, vDown, vHeart, vList)
+
+        this.arrays['up'] = await this.alexicon_RETRIEVE_USERS(this.$ENDPOINT, { ids: typeof vUp == 'string' ? JSON.parse(vUp) : vUp });
+        this.arrays['down'] = await this.alexicon_RETRIEVE_USERS(this.$ENDPOINT, { ids: typeof vDown == 'string' ? JSON.parse(vDown) : vDown });
+        this.arrays['heart'] = await this.alexicon_RETRIEVE_USERS(this.$ENDPOINT, { ids: typeof vHeart == 'string' ? JSON.parse(vHeart) : vHeart });
+        this.arrays['share'] = await this.yipnet_RETRIEVE_POSTS(this.$ENDPOINT, { ids: typeof vList == 'string' ? JSON.parse(vList) : vList });
         
         this.$nextTick(() => {
             setTimeout(() => {

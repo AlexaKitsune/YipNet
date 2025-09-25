@@ -58,6 +58,9 @@ export default {
     components: {
         Send, Paperclip, Trash2, AlexiconComponent, MessageRenderer, ImageProtected,
     },
+    props: {
+        chatUpdater: Object,
+    },
     data(){
         return{
             AlexiconUserData: {},
@@ -179,17 +182,35 @@ export default {
             //this.messages = [];
             const result = await this.yipnet_GET_MESSAGES(this.$ENDPOINT, this.TOKEN(), this.profileId);
             if(result.status == "ok"){
-                console.log("Mensajes recibidos:", result.messages, result.messages[result.messages.length-1].sender_id);
                 if(this.messages.length < 1){
                     this.messages = result.messages;
                 }else{
                     this.messages.push(result.messages[result.messages.length-1])
                 }
             }
-            console.log("this.messages", this.messages)
+            if(window.location.href.includes("#MessageRenderer")) return;
             setTimeout(() => {
                 this.$refs.ChatWindowContent.scrollTop = this.$refs.ChatWindowContent.scrollHeight;
             }, 500);
+        },
+
+        async updateMessageVoted(msgId_) {
+            const result = await this.yipnet_GET_MESSAGES(this.$ENDPOINT, this.TOKEN(), this.profileId);
+            let newMsg = null;
+            for (let i of result.messages) {
+                if (msgId_ == i.id) {
+                    newMsg = i;
+                    break;
+                }
+            }
+            if (!newMsg) return;
+
+            const index = this.messages.findIndex(m => m.id === msgId_);
+            if (index !== -1) {
+                this.$set
+                ? this.$set(this.messages, index, newMsg) // Vue 2
+                : (this.messages[index] = newMsg);        // Vue 3 (reactividad automática con proxys)
+            }
         },
 
         checkIfMessages() {
@@ -201,6 +222,7 @@ export default {
             this.socket.on('yipnet_message', (val) => { this.getMessages(val) });
         },
     },
+
     async mounted(){
         this.AlexiconUserData = JSON.parse(localStorage.getItem("AlexiconUserData"));
 
@@ -216,7 +238,21 @@ export default {
             this.socket.disconnect();            // Cerrar conexión
             this.socket = null;
         }
+    },
+    watch: {
+        chatUpdater: {
+            deep: false,   // como el prop es objeto, si solo cambia internamente usa true
+            immediate: false,
+            handler(newVal) {
+                if (!newVal) return;
+                // condición: mismo userId que el perfil abierto
+                if (Number(newVal.userId) === Number(this.profileId)) {
+                    this.updateMessageVoted(newVal.msgId);
+                }
+            }
+        }
     }
+
 }
 </script>
 

@@ -33,6 +33,9 @@
                     <label>
                         <AlexiconComponent :type="'switch'" @get-val="(val) => nsfwPost = val"/> NSFW
                     </label>
+                    <label>
+                        <AlexiconComponent :type="'switch'" @get-val="(val) => aiGenerated = val"/> AI generated
+                    </label>
                 </div>
                 <button :disabled="postText.trim() == '' || uploading" class="highlighted-btn">
                     <LoaderCircle v-if="uploading" class="load-circle"></LoaderCircle>
@@ -62,6 +65,7 @@ export default {
             },
             nsfwPost: false,
             privatePost: false,
+            aiGenerated: false,
             uploading: false,
             uploadedFilesArray: [],
         }
@@ -152,7 +156,8 @@ export default {
                 media: JSON.stringify(this.uploadedFilesArray),
                 shareId: 0,
                 privatePost: this.privatePost,
-                nsfwPost: this.nsfwPost
+                nsfwPost: this.nsfwPost,
+                aiGenerated: this.aiGenerated
             };
             const result = await this.yipnet_POST(this.$ENDPOINT, this.TOKEN(), newPost);
             console.log("new post created", result)
@@ -256,7 +261,8 @@ export default {
     cursor: pointer;
 }
 
-.PostCreator-buttons > div > label:nth-child(1){
+.PostCreator-buttons > div > label:nth-child(1),
+.PostCreator-buttons > div > label:nth-child(2){
     margin-bottom: 0.5ch;
 }
 

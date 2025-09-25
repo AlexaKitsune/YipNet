@@ -8,6 +8,7 @@
             <div>
                 <p><a :href="getFrontURL()+'/profile/'+postDataData.owner_id">{{ postDataData.name }} {{postDataData.surname}}</a></p>
                 <p><a :href="getFrontURL()+'/post/'+postDataData.id">{{ postDataData.post_date }}</a></p>
+                <p v-if="postDataData.ai_generated == 1" class="ai-gen-label"><Bot class="ai-gen-icon"/> AI generated</p>
             </div>
         </div>
 
@@ -102,6 +103,9 @@
                     <label>
                         <AlexiconComponent :type="'switch'" @get-val="(val) => share.nsfwPost = val"/> NSFW
                     </label>
+                    <label>
+                        <AlexiconComponent :type="'switch'" @get-val="(val) => share.aiGenerated = val"/> AI generated
+                    </label>
                 </div>
                 <button class="highlighted-btn" @click="sharePost()">Share</button>
             </div>
@@ -115,7 +119,7 @@
 </template>
 
 <script>
-import { Paperclip, Trash2, ArrowBigUp, ArrowBigDown, Heart, Forward, UserSearch, Ellipsis, X } from 'lucide-vue-next';
+import { Paperclip, Trash2, ArrowBigUp, ArrowBigDown, Heart, Forward, UserSearch, Ellipsis, X, Bot } from 'lucide-vue-next';
 import AlexiconComponent from '../AlexiconComponents/AlexiconComponent.vue';
 import CommentRenderer from './CommentRenderer.vue';
 import PostRenderer from './PostRenderer.vue';
@@ -128,7 +132,7 @@ import ImageProtected from './ImageProtected.vue';
 export default {
     name: 'PostRenderer',
     components: {
-        AlexiconComponent, CommentRenderer, StatisticsViewer, OptionsViewer, Paperclip, Trash2, ArrowBigUp, ArrowBigDown, Heart, Forward, UserSearch, Ellipsis, X, PostRenderer, ImageProtected
+        AlexiconComponent, CommentRenderer, StatisticsViewer, OptionsViewer, Paperclip, Trash2, ArrowBigUp, ArrowBigDown, Heart, Forward, UserSearch, Ellipsis, X, PostRenderer, Bot, ImageProtected
     },
     props: {
         postData: Object,
@@ -156,6 +160,7 @@ export default {
                 val: '',
                 privatePost: false,
                 nsfwPost: false,
+                aiGenerated: false,
             },
             sharedData: {
                 isShared: false,
@@ -364,7 +369,8 @@ export default {
                 media: JSON.stringify([]),
                 shareId: this.postDataData.id,
                 privatePost: this.share.privatePost,
-                nsfwPost: this.share.nsfwPost
+                nsfwPost: this.share.nsfwPost,
+                aiGenerated: this.share.aiGenerated
             };
             const result = await this.yipnet_POST(this.$ENDPOINT, this.TOKEN(), newPost);
             if(result.response == "Post created successfully.") this.share.active = false;
@@ -485,12 +491,12 @@ export default {
     color: light-dark(black, white);
 }
 
-.PostRenderer-head > div > p:last-child{
+.PostRenderer-head > div > p:nth-child(2){
     color: gray;
     font-size: 1.5ch;
 }
 
-.PostRenderer-head > div > p:last-child a{
+.PostRenderer-head > div > p:nth-child(2) a{
     color: gray;
 }
 
@@ -501,6 +507,19 @@ export default {
 .PostRenderer-head > div > p a:hover{
     text-decoration: underline;
     cursor: pointer;
+}
+
+.ai-gen-label{
+    color: gray;
+    font-size: 1.5ch;
+    margin-top: 0.4ch !important;
+    display: flex;
+    align-items: center;
+}
+
+.ai-gen-icon{
+    margin-right: 0.5ch;
+    margin-top: -0.4ch;
 }
 
 .PostRenderer-MAIN:deep(.AlexiconDoc-MAIN){

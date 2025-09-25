@@ -15,6 +15,9 @@ async function loadApi() {
         app.config.globalProperties[name] = fn
     });
 
+    // Desactiva todos los warnings
+    app.config.warnHandler = () => {}
+
     app.mount('#app');
 }
 
