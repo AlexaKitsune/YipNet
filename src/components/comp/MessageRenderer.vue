@@ -29,7 +29,7 @@
             <div @click="statisticsActive = true">
                 <div style="scale:0.7;"><UserSearch/></div>
             </div>
-            <div @click="optionsActive = true" style="display: none;">
+            <div @click="optionsActive = true">
                 <div style="scale:0.9;"><Ellipsis/></div>
             </div>
         </div>

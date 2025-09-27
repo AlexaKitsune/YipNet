@@ -214,12 +214,22 @@ export default {
         },
 
         checkIfMessages() {
-            if (this.socket) return; // Evitar crear más de una conexión
-
+            if (this.socket) return;
+            
             this.socket = io(this.$ENDPOINT);
             this.socket.emit('join', this.AlexiconUserData.userData.id);
 
-            this.socket.on('yipnet_message', (val) => { this.getMessages(val) });
+            this.socket.on('yipnet_message', (val) => { this.getMessages(val); });
+
+            // <<< NUEVO: cuando llegue el evento de borrado, saca el mensaje del array
+            this.socket.on('yipnet_message_deleted', ({ id }) => {
+                console.log("deletedsocket", id)
+                const idx = this.messages.findIndex(m => Number(m.id) === Number(id));
+                if (idx !== -1) {
+                    // Vue 2/3 compatible
+                    this.messages.splice(idx, 1);
+                }
+            });
         },
     },
 
@@ -235,6 +245,7 @@ export default {
     beforeUnmount() {
         if (this.socket) {
             this.socket.off('yipnet_message'); // Remover listener
+            this.socket.off('yipnet_message_deleted');
             this.socket.disconnect();            // Cerrar conexión
             this.socket = null;
         }

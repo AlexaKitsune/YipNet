@@ -3,8 +3,8 @@
 
         <section class="OptionsViewer-content">
             <div class="OptionsViewer-options" v-if="mode == ''">
-                <div @click="setMode('report')" v-if="AlexiconUserData?.userData?.id != entityData?.owner_id">Report</div>
-                <div @click="setMode('delete')" v-if="AlexiconUserData?.userData?.id == entityData?.owner_id">Delete</div>
+                <div @click="setMode('report')" v-if="AlexiconUserData?.userData?.id != (entityData?.owner_id ?? entityData.sender_id)">Report</div>
+                <div @click="setMode('delete')" v-if="AlexiconUserData?.userData?.id == (entityData?.owner_id ?? entityData.sender_id)">Delete</div>
             </div>
             <div class="OptionsViewer-inside" v-else>
                 <MoveLeft @click="setMode('')" style="cursor: pointer;"/>
@@ -91,7 +91,7 @@ export default {
                             const elem = `${type.charAt(0).toUpperCase() + type.slice(1)}Renderer-${id}`;
                             document.getElementById(elem).remove();
                         } catch (error) {
-                            console.log("Error updating UI after delete");
+                            console.log(this.entityType != 'message' ? "Error updating UI after delete" : "closing on msg");
                         }
                     });
                     this.close();
@@ -114,7 +114,11 @@ export default {
         },
     },
     beforeMount(){
-        this.entityType = this.entityData.comment_date ? 'comment' : 'post';
+        if(this.entityData.sender_id){
+            this.entityType = 'message';
+        }else{
+            this.entityType = this.entityData.comment_date ? 'comment' : 'post';
+        }
     },
     mounted(){
         this.AlexiconUserData = JSON.parse(localStorage.getItem("AlexiconUserData"));

@@ -83,6 +83,9 @@
             <div class="PostRenderer-commentbox-buttons">
                 <div class="lucide-icon"><Paperclip/><input type="file" multiple @change="setFilesPreview()" ref="comment-files-input" accept="image/*,video/*"></div>
                 <div class="lucide-icon"><Trash2 @click="deleteFiles()"/></div>
+                <label>
+                    <AlexiconComponent :type="'switch'" @get-val="(val) => commentInputs.aiGenerated = val" :key="keyUpdater"/> AI generated
+                </label>
                 <button :disabled="commentInputs.text.trim() == ''" class="highlighted-btn" @click="comment()">Comment</button>
             </div> 
         </div>
@@ -144,7 +147,8 @@ export default {
             postDataData: {},
             commentInputs: {
                 text: "",
-                media: []
+                media: [],
+                aiGenerated: false,
             },
             filteredMedia: {
                 multimedia: [],
@@ -304,14 +308,17 @@ export default {
             const newComment = {
                 postId: this.postDataData.id,
                 content: this.commentInputs.text,
-                media: this.uploadedFilesArray
+                media: this.uploadedFilesArray,
+                aiGenerated: this.commentInputs.aiGenerated,
             };
 
             const result = await this.yipnet_COMMENT(this.$ENDPOINT, this.TOKEN(), newComment);
             if(result.status == 'ok'){
+                console.log("Regenerando this.commentInputs")
                 this.commentInputs = {
                     text: "",
-                    media: []
+                    media: [],
+                    aiGenerated: false,
                 };
                 this.uploadedFilesArray = [];
                 this.keyUpdater++;
@@ -511,15 +518,16 @@ export default {
 
 .ai-gen-label{
     color: gray;
-    font-size: 1.5ch;
-    margin-top: 0.4ch !important;
+    font-size: 1.4ch;
+    margin-top: 0.2ch !important;
     display: flex;
     align-items: center;
 }
 
 .ai-gen-icon{
     margin-right: 0.5ch;
-    margin-top: -0.4ch;
+    margin-top: -0.5ch;
+    scale: 0.9;
 }
 
 .PostRenderer-MAIN:deep(.AlexiconDoc-MAIN){

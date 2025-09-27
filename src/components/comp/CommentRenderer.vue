@@ -8,8 +8,11 @@
             <div>
                 <p><a :href="getFrontURL()+'/profile/'+commentDataData.owner_id">{{ commentDataData.name }} {{commentDataData.surname}}</a></p>
                 <p>{{ commentDataData.comment_date }}</p>
+                <p v-if="commentDataData.ai_generated == 1" class="ai-gen-label"><Bot class="ai-gen-icon"/> AI generated</p>
             </div>
         </div>
+
+        <pre>{{ commentData }}</pre>
 
         <AlexiconComponent :type="'markdown'" :val="commentDataData.content"/>
 
@@ -49,7 +52,7 @@
 </template>
 
 <script>
-import { ArrowBigUp, ArrowBigDown, Heart, UserSearch, Ellipsis } from 'lucide-vue-next';
+import { ArrowBigUp, ArrowBigDown, Heart, UserSearch, Ellipsis, Bot } from 'lucide-vue-next';
 import AlexiconComponent from '../AlexiconComponents/AlexiconComponent.vue';
 import StatisticsViewer from './StatisticsViewer.vue';
 import OptionsViewer from './OptionsViewer.vue';
@@ -60,7 +63,7 @@ import ImageProtected from './ImageProtected.vue';
 export default {
     name: 'CommentRenderer',
     components: {
-        AlexiconComponent, StatisticsViewer, OptionsViewer, ArrowBigUp, ArrowBigDown, Heart, UserSearch, Ellipsis, ImageProtected
+        AlexiconComponent, StatisticsViewer, OptionsViewer, ArrowBigUp, ArrowBigDown, Heart, UserSearch, Ellipsis, Bot, ImageProtected
     },
     props: {
         commentData: Object
@@ -226,12 +229,12 @@ export default {
     color: light-dark(black, white);
 }
 
-.CommentRenderer-head > div > p:last-child{
+.CommentRenderer-head > div > p:nth-child(2){
     color: gray;
     font-size: 1.4ch;
 }
 
-.CommentRenderer-head > div > p:last-child a{
+.CommentRenderer-head > div > p:nth-child(2) a{
     color: gray;
 }
 
@@ -242,6 +245,20 @@ export default {
 .CommentRenderer-head > div > p a:hover{
     text-decoration: underline;
     cursor: pointer;
+}
+
+.ai-gen-label{
+    color: gray;
+    font-size: 1.4ch;
+    margin-top: 0ch !important;
+    display: flex;
+    align-items: center;
+}
+
+.ai-gen-icon{
+    margin-right: 0.5ch;
+    margin-top: -0.5ch;
+    scale: 0.9;
 }
 
 /* votes */

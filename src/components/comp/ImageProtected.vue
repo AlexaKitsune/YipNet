@@ -79,7 +79,7 @@ export default {
 			// 2) requiere token
 			let token = localStorage.getItem('AlexiconUserToken');
 			if (!token) {
-				token = prompt('Este recurso requiere autenticación.\nPega tu token (JWT):', '') || '';
+				//token = prompt('Este recurso requiere autenticación.\nPega tu token (JWT):', '') || '';
 				if (!token) return false;
 				localStorage.setItem('AlexiconUserToken', token);
 			}
