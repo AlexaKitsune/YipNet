@@ -16,7 +16,7 @@
 		</AlexiconComponent>
 		<div class="Alexicon-container">
 			<AlexiconComponent :type="'asidemenu'" :active="menuActive" :size="200">
-				<button class="log-out"><LogOut/> &nbsp; Log out</button>
+				<button class="log-out" @click="logout()"><LogOut/> &nbsp; Log out</button>
 				<MessageListing/>
 			</AlexiconComponent>
 			<main class="Alexicon-main">
@@ -119,6 +119,14 @@ export default {
 			this.emergent.origin = origin_;
 			this.emergent.message = val_;
 		},
+
+		async logout(){
+			const result = await this.alexicon_LOGOUT(this.$ENDPOINT, this.TOKEN());
+			if(result.response == "Logged out successfully."){
+				localStorage.clear();
+				window.location.reload();
+			}
+		}
 	},
 
 	watch: {
@@ -126,6 +134,15 @@ export default {
 			if (newValue) {
 				this.AlexiconUserData = JSON.parse(localStorage.getItem("AlexiconUserData"));
 			}
+		}
+	},
+
+	async beforeMount(){
+		if(!localStorage.getItem("AlexiconUserData")) return;
+		const result = await this.alexicon_CHECK_SESSION(this.$ENDPOINT, this.TOKEN());
+		if (result.status != "ok") {
+			localStorage.clear();
+			window.location.reload();
 		}
 	},
 

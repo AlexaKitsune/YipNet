@@ -181,13 +181,13 @@ export default {
 }
 
 .AlexiconUniversalLoginRegister-MAIN > section{
-    width: fit-content;
+    width: 640px;
     height: fit-content;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    max-width: 90vw;
+    max-width: calc(100% - 6ch - 10vw);
     max-height: 90vh;
     background-color: light-dark(v-bind('styles.light.LoginRegister.bg'), v-bind('styles.dark.LoginRegister.bg'));
     padding: 2ch 3ch;
