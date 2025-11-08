@@ -57,8 +57,8 @@ export default {
             this.socket = io(this.$ENDPOINT);
             this.socket.emit('join', this.myId);
 
-            this.socket.on('yipnet_notification', (data) => {
-                if(data.type == "message") this.getMessagesList();
+            this.socket.on('message', (data) => {
+                if(data.content.entityType == "message") this.getMessagesList();
             });
         },
     },
@@ -68,7 +68,7 @@ export default {
     },
     beforeUnmount() {
         if (this.socket) {
-            this.socket.off('vote_notification'); // Remover listener
+            this.socket.off('message');
             this.socket.disconnect();            // Cerrar conexión
             this.socket = null;
         }

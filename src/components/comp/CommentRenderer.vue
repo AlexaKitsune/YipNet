@@ -12,8 +12,6 @@
             </div>
         </div>
 
-        <pre>{{ commentData }}</pre>
-
         <AlexiconComponent :type="'markdown'" :val="commentDataData.content"/>
 
         <!--media-->

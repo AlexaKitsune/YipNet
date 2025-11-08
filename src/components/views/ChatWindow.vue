@@ -219,16 +219,52 @@ export default {
             this.socket = io(this.$ENDPOINT);
             this.socket.emit('join', this.AlexiconUserData.userData.id);
 
-            this.socket.on('yipnet_message', (val) => { this.getMessages(val); });
+            this.socket.on('message', (val) => { this.getMessages(val); });
 
             // <<< NUEVO: cuando llegue el evento de borrado, saca el mensaje del array
-            this.socket.on('yipnet_message_deleted', ({ id }) => {
-                console.log("deletedsocket", id)
-                const idx = this.messages.findIndex(m => Number(m.id) === Number(id));
-                if (idx !== -1) {
-                    // Vue 2/3 compatible
+            this.socket.on('message_deleted', (data) => {
+                const delId = data?.content?.id;
+                const idx = this.messages.findIndex(m => Number(m.id) === Number(delId));
+                if (idx !== -1)
                     this.messages.splice(idx, 1);
+            });
+
+            this.socket.on('vote', ({ content }) => {
+                const votedId    = Number(content?.targetId);
+                const voteType   = String(content?.voteType || '');
+                const voteStatus = String(content?.status || '');
+                const performerId= Number(content?.user?.id);
+
+                if (!Number.isFinite(votedId) || !voteType || !Number.isFinite(performerId)) return;
+
+                const field = `list_vote_${voteType}`;
+                const idx   = this.messages.findIndex(m => Number(m.id) === votedId);
+                if (idx === -1) return;
+
+                const msg  = this.messages[idx];
+                const raw  = msg[field];
+
+                // Decodificar a array seguro
+                let arr;
+                try {
+                    arr = JSON.parse(raw ?? '[]');
+                } catch {
+                    // Si ya viene como array o está malformado
+                    arr = Array.isArray(raw) ? raw : [];
                 }
+
+                // Normalizar → números únicos y finitos
+                arr = Array.from(new Set(arr.map(Number).filter(Number.isFinite)));
+
+                if (voteStatus === 'added') {
+                    if (!arr.includes(performerId)) arr.push(performerId);
+                } else if (voteStatus === 'removed') {
+                    arr = arr.filter(id => id !== performerId);
+                }
+
+                // Volver a string y actualizar reactivamente
+                const updated = { ...msg, [field]: JSON.stringify(arr) };
+                this.$set ? this.$set(this.messages, idx, updated) : (this.messages[idx] = updated);
             });
         },
     },
@@ -244,8 +280,9 @@ export default {
     },
     beforeUnmount() {
         if (this.socket) {
-            this.socket.off('yipnet_message'); // Remover listener
-            this.socket.off('yipnet_message_deleted');
+            this.socket.off('message'); // Remover listener
+            this.socket.off('message_deleted');
+            this.socket.off('vote');
             this.socket.disconnect();            // Cerrar conexión
             this.socket = null;
         }

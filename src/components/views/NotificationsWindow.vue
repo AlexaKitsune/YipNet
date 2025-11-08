@@ -63,7 +63,7 @@
                 </div>
             </a>
 
-            <pre style="font-size: 1ch;">{{ item }}<hr/></pre>
+            <!--<pre style="font-size: 1ch;">{{ item }}<hr/></pre>-->
 
         </div>
         
@@ -99,8 +99,9 @@ export default {
             this.socket = io(this.$ENDPOINT);
             this.socket.emit('join', this.AlexiconUserData.userData.id);
 
-            this.socket.on('yipnet_notification', () => { this.getNotifications(); });
-            this.socket.on('follow_notification', () => { this.getNotifications(); });
+            this.socket.on('vote', () => { this.getNotifications(); });
+            this.socket.on('follow', () => { this.getNotifications(); });
+            this.socket.on('comment', () => { this.getNotifications(); });
         },
 
         getFrontURL(){
@@ -121,7 +122,7 @@ export default {
             }
 
             const r = result.notifications[0];
-            if(r.service == 'yipnet' && r.content.entityType == 'message') this.$emit('update-chat-window', { userId: r.content.user.id, msgId: r.content.targetId });
+            if(r?.service == 'yipnet' && r?.content.entityType == 'message') this.$emit('update-chat-window', { userId: r.content.user.id, msgId: r.content.targetId });
 
             this.processedNotifications = this.allNotifications;
             this.$emit('update-notifications', this.unseenNotifications);
@@ -159,7 +160,9 @@ export default {
     },
     beforeUnmount() {
         if (this.socket) {
-            this.socket.off('vote_notification'); // Remover listener
+            this.socket.off('vote'); // Remover listener
+            this.socket.off('follow');
+            this.socket.off('comment');
             this.socket.disconnect();            // Cerrar conexión
             this.socket = null;
         }

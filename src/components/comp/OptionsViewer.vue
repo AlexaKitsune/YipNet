@@ -83,7 +83,7 @@ export default {
             const type = this.entityType;
             const mode = this.mode;
 
-            if(mode == 'delete'){       
+            if(mode == 'delete'){
                 const result = await this.yipnet_DELETE(this.$ENDPOINT, this.TOKEN(), {id, type });
                 if (result.status === 'ok') {
                     this.$nextTick(() => {
