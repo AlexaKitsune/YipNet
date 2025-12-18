@@ -129,13 +129,12 @@ export default {
 
 		async checkSession(){
 			const token = window.alexicon.TOKEN();
-			console.log("check session token", token);
 			if(!token) return window.location.href = this.$ENDPOINT+"/access?service=yipnet";
-			const result = window.alexicon.CHECK_SESSION(this.$ENDPOINT, window.alexicon.TOKEN());
+			const result = await window.alexicon.CHECK_SESSION(this.$ENDPOINT, window.alexicon.TOKEN());
 			if(result.status == "ok"){
 				this.sessionActive = true;
 			}else{
-				return window.location.href = this.$ENDPOINT+"/access?service=yipnet";
+				window.location.href = this.$ENDPOINT+"/access?service=yipnet";
 			}
 		}
 	},
