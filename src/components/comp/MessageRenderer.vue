@@ -102,9 +102,9 @@ export default {
 
             // 3) resolver todos con tu helper
             const endpoint = this.$ENDPOINT;
-            const token = this.TOKEN?.();
+            const token = window.alexicon.TOKEN?.();
             const results = await Promise.all(
-                ids.map(id => this.alexicon_MEDIA_FILE(endpoint, token, id).catch(() => null))
+                ids.map(id => window.alexicon.MEDIA_FILE(endpoint, token, id).catch(() => null))
             );
 
             // 4) clasificar por tipo
@@ -121,7 +121,7 @@ export default {
         async vote(voteType){
             const targetId = this.messageData.id;
             const entityType = "message";
-            const result = await this.yipnet_VOTE(this.$ENDPOINT, this.TOKEN(), { voteType, targetId, entityType });
+            const result = await window.yipnet.VOTE(this.$ENDPOINT, window.alexicon.TOKEN(), { voteType, targetId, entityType });
             console.log(result)
             this.$parent.updateMessageVoted(targetId);
         },

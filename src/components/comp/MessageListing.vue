@@ -47,7 +47,7 @@ export default {
         },
 
         async getMessagesList(){
-            const result = await this.yipnet_LIST_MESSAGES(this.$ENDPOINT, this.TOKEN());
+            const result = await window.yipnet.LIST_MESSAGES(this.$ENDPOINT, window.alexicon.TOKEN());
             this.list = result.data.dm_latest;
         },
 

@@ -84,7 +84,7 @@ export default {
             const mode = this.mode;
 
             if(mode == 'delete'){
-                const result = await this.yipnet_DELETE(this.$ENDPOINT, this.TOKEN(), {id, type });
+                const result = await window.yipnet.DELETE(this.$ENDPOINT, window.alexicon.TOKEN(), {id, type });
                 if (result.status === 'ok') {
                     this.$nextTick(() => {
                         try {
@@ -105,7 +105,7 @@ export default {
                     message: this.reportContent,
                 };
 
-                const result = await this.alexicon_REPORT(this.$ENDPOINT, this.TOKEN(), reportData);
+                const result = await window.alexicon.REPORT(this.$ENDPOINT, window.alexicon.TOKEN(), reportData);
                 if (result.status === "ok") {
                     console.log("Reporte enviado con éxito");
                     this.close();

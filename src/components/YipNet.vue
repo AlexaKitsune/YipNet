@@ -1,8 +1,7 @@
 <template>
 	<main class="YipNet-MAIN">
 
-	<AlexiconComponent :type="'universalloginregister'" :serviceName="'YipNet'" v-if="!sessionActive" @get-val="() => { sessionActive = true }" @login-register-err="(val) => launchEmergent(val, 'login-register-err')"/>
-	<AlexiconComponent :type="'mainpage'" :highlightBtnColor="'#7701ff'" v-else>
+	<AlexiconComponent :type="'mainpage'" :highlightBtnColor="'#7701ff'" v-if="sessionActive">
 		<AlexiconComponent :type="'searchbar'" :placeholder="'Search'" @get-switch-menu="(val) => menuActive = val">
 			<a :href="getFrontURL()" class="YipNet-icon-newsfeed"><Newspaper/></a>
 			<a :href="getFrontURL()+'/settings/'" class="YipNet-icon-settings"><Settings/></a>
@@ -121,10 +120,22 @@ export default {
 		},
 
 		async logout(){
-			const result = await this.alexicon_LOGOUT(this.$ENDPOINT, this.TOKEN());
+			const result = await window.alexicon.LOGOUT(this.$ENDPOINT, window.alexicon.TOKEN());
 			if(result.response == "Logged out successfully."){
 				localStorage.clear();
 				window.location.reload();
+			}
+		},
+
+		async checkSession(){
+			const token = window.alexicon.TOKEN();
+			console.log("check session token", token);
+			if(!token) return window.location.href = this.$ENDPOINT+"/access?service=yipnet";
+			const result = window.alexicon.CHECK_SESSION(this.$ENDPOINT, window.alexicon.TOKEN());
+			if(result.status == "ok"){
+				this.sessionActive = true;
+			}else{
+				return window.location.href = this.$ENDPOINT+"/access?service=yipnet";
 			}
 		}
 	},
@@ -139,7 +150,7 @@ export default {
 
 	async beforeMount(){
 		if(!localStorage.getItem("AlexiconUserData")) return;
-		const result = await this.alexicon_CHECK_SESSION(this.$ENDPOINT, this.TOKEN());
+		const result = await window.alexicon.CHECK_SESSION(this.$ENDPOINT, window.alexicon.TOKEN());
 		if (result.status != "ok") {
 			localStorage.clear();
 			window.location.reload();
@@ -147,6 +158,8 @@ export default {
 	},
 
 	mounted(){
+		this.checkSession();
+
 		this.AlexiconUserData = JSON.parse(localStorage.getItem("AlexiconUserData"));
 		this.autoRoutes();
 		window.addEventListener("popstate", this.autoRoutes);

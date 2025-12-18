@@ -208,9 +208,9 @@ export default {
 
             // 3) resolver todos con tu helper
             const endpoint = this.$ENDPOINT;
-            const token = this.TOKEN?.();
+            const token = window.alexicon.TOKEN?.();
             const results = await Promise.all(
-                ids.map(id => this.alexicon_MEDIA_FILE(endpoint, token, id).catch(() => null))
+                ids.map(id => window.alexicon.MEDIA_FILE(endpoint, token, id).catch(() => null))
             );
 
             // 4) clasificar por tipo
@@ -312,7 +312,7 @@ export default {
                 aiGenerated: this.commentInputs.aiGenerated,
             };
 
-            const result = await this.yipnet_COMMENT(this.$ENDPOINT, this.TOKEN(), newComment);
+            const result = await window.yipnet.COMMENT(this.$ENDPOINT, window.alexicon.TOKEN(), newComment);
             if(result.status == 'ok'){
                 console.log("Regenerando this.commentInputs")
                 this.commentInputs = {
@@ -330,7 +330,7 @@ export default {
         },
 
         async listComments(){
-            const result = await this.yipnet_LIST_COMMENTS(this.$ENDPOINT, this.TOKEN(), this.postDataData.id);
+            const result = await window.yipnet.LIST_COMMENTS(this.$ENDPOINT, window.alexicon.TOKEN(), this.postDataData.id);
 
             if (result.response) {
                 console.error("Error del servidor:", result.response);
@@ -354,7 +354,7 @@ export default {
                 entityType: 'post'
             };
 
-            const result = await this.yipnet_VOTE(this.$ENDPOINT, this.TOKEN(), voteData);
+            const result = await window.yipnet.VOTE(this.$ENDPOINT, window.alexicon.TOKEN(), voteData);
 
             console.log("Resultado de la votación:", result);
             if(result.response != "Vote updated"){ return; }
@@ -379,12 +379,12 @@ export default {
                 nsfwPost: this.share.nsfwPost,
                 aiGenerated: this.share.aiGenerated
             };
-            const result = await this.yipnet_POST(this.$ENDPOINT, this.TOKEN(), newPost);
+            const result = await window.yipnet.POST(this.$ENDPOINT, window.alexicon.TOKEN(), newPost);
             if(result.response == "Post created successfully.") this.share.active = false;
         },
 
         async getSinlgePost(id_){
-            const result = await this.yipnet_GET_SINGLE_POST(this.$ENDPOINT, this.TOKEN(), id_);
+            const result = await window.yipnet.GET_SINGLE_POST(this.$ENDPOINT, window.alexicon.TOKEN(), id_);
             this.sharedData.content = result;
             this.$nextTick(() => this.sharedData.contentLoaded = true );
         },

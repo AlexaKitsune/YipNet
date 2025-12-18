@@ -159,7 +159,7 @@ export default {
                 nsfwPost: this.nsfwPost,
                 aiGenerated: this.aiGenerated
             };
-            const result = await this.yipnet_POST(this.$ENDPOINT, this.TOKEN(), newPost);
+            const result = await window.yipnet.POST(this.$ENDPOINT, window.alexicon.TOKEN(), newPost);
             console.log("new post created", result)
             this.uploading = false;
             this.$emit('update-post');

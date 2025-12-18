@@ -23,7 +23,7 @@ export default {
     },
 
     async mounted(){
-        const result = await this.yipnet_GET_SINGLE_POST(this.$ENDPOINT, this.TOKEN(), this.postId);
+        const result = await window.yipnet.GET_SINGLE_POST(this.$ENDPOINT, window.alexicon.TOKEN(), this.postId);
         this.content = result || {};
         this.$nextTick(() => {
             if(result) this.contentLoaded = true;

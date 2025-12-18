@@ -106,10 +106,10 @@ export default{
 
         console.log(vUp, vDown, vHeart, vList)
 
-        this.arrays['up'] = await this.alexicon_RETRIEVE_USERS(this.$ENDPOINT, { ids: typeof vUp == 'string' ? JSON.parse(vUp) : vUp });
-        this.arrays['down'] = await this.alexicon_RETRIEVE_USERS(this.$ENDPOINT, { ids: typeof vDown == 'string' ? JSON.parse(vDown) : vDown });
-        this.arrays['heart'] = await this.alexicon_RETRIEVE_USERS(this.$ENDPOINT, { ids: typeof vHeart == 'string' ? JSON.parse(vHeart) : vHeart });
-        this.arrays['share'] = await this.yipnet_RETRIEVE_POSTS(this.$ENDPOINT, { ids: typeof vList == 'string' ? JSON.parse(vList) : vList });
+        this.arrays['up'] = await window.alexicon.RETRIEVE_USERS(this.$ENDPOINT, { ids: typeof vUp == 'string' ? JSON.parse(vUp) : vUp });
+        this.arrays['down'] = await window.alexicon.RETRIEVE_USERS(this.$ENDPOINT, { ids: typeof vDown == 'string' ? JSON.parse(vDown) : vDown });
+        this.arrays['heart'] = await window.alexicon.RETRIEVE_USERS(this.$ENDPOINT, { ids: typeof vHeart == 'string' ? JSON.parse(vHeart) : vHeart });
+        this.arrays['share'] = await window.yipnet.RETRIEVE_POSTS(this.$ENDPOINT, { ids: typeof vList == 'string' ? JSON.parse(vList) : vList });
         
         this.$nextTick(() => {
             setTimeout(() => {

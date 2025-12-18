@@ -109,7 +109,7 @@ export default {
 		},
 
         async getNotifications(){
-            const result = await this.alexicon_NOTIFICATIONS(this.$ENDPOINT, this.TOKEN());
+            const result = await window.alexicon.NOTIFICATIONS(this.$ENDPOINT, window.alexicon.TOKEN());
             // Reset antes de llenar
             this.allNotifications = [];
             this.unseenNotifications = 0;
@@ -130,7 +130,7 @@ export default {
 
         async markAsSeen(id_, seen_){
             if(seen_ === true) return;
-            const result = await this.alexicon_NOTIFICATION_SEEN(this.$ENDPOINT, this.TOKEN(), { id: id_ });
+            const result = await window.alexicon.NOTIFICATION_SEEN(this.$ENDPOINT, window.alexicon.TOKEN(), { id: id_ });
             if(result.status == "ok") this.getNotifications();
         },
 

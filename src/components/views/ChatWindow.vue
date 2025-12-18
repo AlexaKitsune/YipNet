@@ -139,7 +139,7 @@ export default {
                 const results = [];
                 for (const chunk of chunks) {
                     const partial = await Promise.all(
-                        chunk.map(file => this.alexicon_UPLOAD(this.$ENDPOINT, this.TOKEN(), { file, targetPath, visibility }))
+                        chunk.map(file => window.alexicon.UPLOAD(this.$ENDPOINT, window.alexicon.TOKEN(), { file, targetPath, visibility }))
                     );
                     results.push(...partial);
                 }
@@ -166,7 +166,7 @@ export default {
                 conversationId: 0,
             }
 
-            const result = await this.yipnet_MESSAGE(this.$ENDPOINT, this.TOKEN(), data);
+            const result = await window.yipnet.MESSAGE(this.$ENDPOINT, window.alexicon.TOKEN(), data);
 
             console.log("Mensaje enviado:", result);
             this.uploading = false;
@@ -180,7 +180,7 @@ export default {
 
         async getMessages(){
             //this.messages = [];
-            const result = await this.yipnet_GET_MESSAGES(this.$ENDPOINT, this.TOKEN(), this.profileId);
+            const result = await window.yipnet.GET_MESSAGES(this.$ENDPOINT, window.alexicon.TOKEN(), this.profileId);
             if(result.status == "ok"){
                 if(this.messages.length < 1){
                     this.messages = result.messages;
@@ -195,7 +195,7 @@ export default {
         },
 
         async updateMessageVoted(msgId_) {
-            const result = await this.yipnet_GET_MESSAGES(this.$ENDPOINT, this.TOKEN(), this.profileId);
+            const result = await window.yipnet.GET_MESSAGES(this.$ENDPOINT, window.alexicon.TOKEN(), this.profileId);
             let newMsg = null;
             for (let i of result.messages) {
                 if (msgId_ == i.id) {
@@ -272,7 +272,7 @@ export default {
     async mounted(){
         this.AlexiconUserData = JSON.parse(localStorage.getItem("AlexiconUserData"));
 
-        const result = await this.alexicon_RETRIEVE(this.$ENDPOINT, this.profileId);
+        const result = await window.alexicon.RETRIEVE(this.$ENDPOINT, this.profileId);
         this.userData = result;
 
         this.getMessages();

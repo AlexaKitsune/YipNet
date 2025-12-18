@@ -25,7 +25,7 @@ export default{
         }
     },
     async mounted(){
-        const result = await this.yipnet_NEWSFEED(this.$ENDPOINT, this.TOKEN());
+        const result = await window.yipnet.NEWSFEED(this.$ENDPOINT, window.alexicon.TOKEN());
         this.newsfeedPosts = result?.response ?? [];
     }
 }

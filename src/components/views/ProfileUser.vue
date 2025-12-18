@@ -110,7 +110,7 @@ export default {
 		},
 
         async getPublicUserData(){
-            const result = await this.alexicon_RETRIEVE(this.$ENDPOINT, this.profileId);
+            const result = await window.alexicon.RETRIEVE(this.$ENDPOINT, this.profileId);
             this.userData = result;
             this.userData.list_positive = JSON.parse(result.list_positive);
             this.userData.list_positive_external = JSON.parse(result.list_positive_external);
@@ -142,13 +142,13 @@ export default {
             const targetPath = "yipnet/" + this.AlexiconUserData.userData.id;
             const visibility = this.privatePost ? 'private' : 'public';
 
-            const result = await this.alexicon_UPLOAD(this.$ENDPOINT, this.TOKEN(), { file, targetPath, visibility });
+            const result = await window.alexicon.UPLOAD(this.$ENDPOINT, window.alexicon.TOKEN(), { file, targetPath, visibility });
             if(result.status == "ok"){
                 let pic;
                 if(this.editModes.type == "cover") pic = "cover";
                 if(this.editModes.type == "pfp") pic = "profile";
 
-                const newResult = await this.alexicon_UPDATE_PICS(this.$ENDPOINT, this.TOKEN(), { pic, url: result.fileId });
+                const newResult = await window.alexicon.UPDATE_PICS(this.$ENDPOINT, window.alexicon.TOKEN(), { pic, url: result.fileId });
                 if(newResult.status == "ok"){
                     this.editModes = {
                         active: false,
@@ -179,7 +179,7 @@ export default {
             const myUserData = structuredClone(this.AlexiconUserData.userData);
             myUserData.description = this.editModes.value;
 
-            const result = await this.alexicon_UPDATE_PROFILE(this.$ENDPOINT, this.TOKEN(), myUserData);
+            const result = await window.alexicon.UPDATE_PROFILE(this.$ENDPOINT, window.alexicon.TOKEN(), myUserData);
             if(result.status == "ok"){
                 this.AlexiconUserData.userData.description = this.editModes.value;
                 localStorage.setItem("AlexiconUserData", JSON.stringify(this.AlexiconUserData));
@@ -197,7 +197,7 @@ export default {
         async manageFollow(mode){
             const targetId = parseInt(this.profileId);
 
-            const result = await this.alexicon_FOLLOW(this.$ENDPOINT, this.TOKEN(), { targetId, mode });
+            const result = await window.alexicon.FOLLOW(this.$ENDPOINT, window.alexicon.TOKEN(), { targetId, mode });
             
             if(result.status == "ok"){
                 let myListPositive = JSON.parse(this.AlexiconUserData.userData.list_positive);
@@ -221,7 +221,7 @@ export default {
         async manageBlock(mode){
             const targetId = parseInt(this.profileId);
 
-            const result = await this.alexicon_BLOCK(this.$ENDPOINT, this.TOKEN(), { targetId, mode });
+            const result = await window.alexicon.BLOCK(this.$ENDPOINT, window.alexicon.TOKEN(), { targetId, mode });
 
             if(result.status == "ok"){
                 let myListNegative = JSON.parse(this.AlexiconUserData.userData.list_negative);
@@ -242,7 +242,7 @@ export default {
         },
 
         async listPosts(){
-            const result = await this.yipnet_LIST_POSTS(this.$ENDPOINT, this.TOKEN(), this.profileId);
+            const result = await window.yipnet.LIST_POSTS(this.$ENDPOINT, window.alexicon.TOKEN(), this.profileId);
             this.postList.unshift(result.post_list[0]); 
             this.keyUpdater++;
         }
@@ -261,7 +261,7 @@ export default {
 
         this.getPublicUserData();
         
-        const result = await this.yipnet_LIST_POSTS(this.$ENDPOINT, this.TOKEN(), this.profileId);
+        const result = await window.yipnet.LIST_POSTS(this.$ENDPOINT, window.alexicon.TOKEN(), this.profileId);
         this.postList = result?.post_list ?? [];
 
         AOS.init();

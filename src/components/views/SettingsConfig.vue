@@ -113,7 +113,7 @@ export default {
                 return;
             }
 
-            const result = await this.alexicon_UPDATE_PROFILE(this.$ENDPOINT, this.TOKEN(), profileData);
+            const result = await window.alexicon.UPDATE_PROFILE(this.$ENDPOINT, window.alexicon.TOKEN(), profileData);
             if(result.status == "ok"){
                 this.AlexiconUserData.userData.name = profileData.name;
                 this.AlexiconUserData.userData.surname = profileData.surname;
@@ -126,14 +126,14 @@ export default {
         },
 
         async unblock(id_){
-            const result = await this.alexicon_BLOCK(this.$ENDPOINT, this.TOKEN(), { targetId: id_, mode: "unblock" });
+            const result = await window.alexicon.BLOCK(this.$ENDPOINT, window.alexicon.TOKEN(), { targetId: id_, mode: "unblock" });
             if(result.status == "ok"){
                 let list_negative = JSON.parse(this.AlexiconUserData.userData.list_negative);
                 list_negative = list_negative.filter(item => item !== id_);
                 this.AlexiconUserData.userData.list_negative = JSON.stringify(list_negative);
                 localStorage.setItem("AlexiconUserData", JSON.stringify(this.AlexiconUserData));
                 const arr = JSON.parse(this.AlexiconUserData.userData.list_negative);
-                this.blockedUsers = await this.alexicon_RETRIEVE_USERS(this.$ENDPOINT, { ids: arr });
+                this.blockedUsers = await window.alexicon.RETRIEVE_USERS(this.$ENDPOINT, { ids: arr });
             }
         },
 
@@ -147,7 +147,7 @@ export default {
                 return;
             }
 
-            const result = await this.alexicon_UPDATE_PASS(this.$ENDPOINT, this.TOKEN(), { oldPass, newPass });
+            const result = await window.alexicon.UPDATE_PASS(this.$ENDPOINT, window.alexicon.TOKEN(), { oldPass, newPass });
             if(result.status == "ok"){
                 console.log("Contraseña actualizada con éxito.");
                 this.password = {
@@ -174,7 +174,7 @@ export default {
         });
 
         const arr = JSON.parse(this.AlexiconUserData.userData.list_negative);
-        this.blockedUsers = await this.alexicon_RETRIEVE_USERS(this.$ENDPOINT, { ids: arr });
+        this.blockedUsers = await window.alexicon.RETRIEVE_USERS(this.$ENDPOINT, { ids: arr });
     }
 }
 </script>
