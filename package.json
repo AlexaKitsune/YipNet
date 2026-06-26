@@ -1,54 +1,57 @@
 {
   "name": "yipnet",
-  "version": "0.1.0",
+  "version": "0.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "run-s lint:*",
+    "lint:oxlint": "oxlint . --fix",
+    "lint:eslint": "eslint . --fix --cache"
   },
   "dependencies": {
-    "aos": "^2.3.4",
-    "core-js": "^3.8.3",
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/cli": "^7.6.7",
+    "@capacitor/core": "^8.4.1",
+    "@nuxt/ui": "^4.8.2",
+    "@tailwindcss/vite": "^4.3.1",
+    "@unovis/ts": "^1.6.5",
+    "@unovis/vue": "^1.6.5",
+    "dompurify": "^3.4.11",
     "highlight.js": "^11.11.1",
-    "lucide-vue-next": "^0.508.0",
-    "mammoth": "^1.9.0",
-    "marked": "^15.0.11",
-    "marked-highlight": "^2.2.1",
-    "marked-katex-extension": "^5.1.4",
-    "socket.io-client": "^4.8.1",
+    "katex": "^0.17.0",
+    "mammoth": "^1.12.0",
+    "marked": "^18.0.5",
+    "marked-highlight": "^2.2.4",
+    "marked-katex-extension": "^5.1.10",
+    "pinia": "^3.0.4",
+    "socket.io-client": "^4.8.3",
     "srt-parser-2": "^1.2.3",
-    "vue": "^3.2.13",
-    "vue-router": "^4.5.1",
+    "tailwindcss": "^4.3.1",
+    "three": "^0.184.0",
+    "vue": "^3.5.32",
+    "vue-chrts": "^2.1.4",
+    "vue-i18n": "^11.4.2",
+    "vue-router": "^5.0.4",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@babel/core": "^7.12.16",
-    "@babel/eslint-parser": "^7.12.16",
-    "@vue/cli-plugin-babel": "~5.0.0",
-    "@vue/cli-plugin-eslint": "~5.0.0",
-    "@vue/cli-service": "~5.0.0",
-    "eslint": "^7.32.0",
-    "eslint-plugin-vue": "^8.0.3"
+    "@eslint/js": "^10.0.1",
+    "@vitejs/plugin-vue": "^6.0.6",
+    "eslint": "^10.2.1",
+    "eslint-plugin-oxlint": "~1.60.0",
+    "eslint-plugin-vue": "~10.8.0",
+    "globals": "^17.5.0",
+    "npm-run-all2": "^8.0.4",
+    "oxlint": "~1.60.0",
+    "stylus": "^0.64.0",
+    "vite": "^8.0.8",
+    "vite-plugin-vue-devtools": "^8.1.1"
   },
-  "eslintConfig": {
-    "root": true,
-    "env": {
-      "node": true
-    },
-    "extends": [
-      "plugin:vue/vue3-essential",
-      "eslint:recommended"
-    ],
-    "parserOptions": {
-      "parser": "@babel/eslint-parser"
-    },
-    "rules": {}
-  },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not dead",
-    "not ie 11"
-  ]
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  }
 }

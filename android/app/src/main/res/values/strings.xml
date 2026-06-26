@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">yipnet</string>
+    <string name="title_activity_main">yipnet</string>
+    <string name="package_name">systems.alexicon.yipnet</string>
+    <string name="custom_url_scheme">systems.alexicon.yipnet</string>
+</resources>
